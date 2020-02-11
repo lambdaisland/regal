@@ -1,0 +1,12 @@
+{:paths ["src" "test" "resources"]
+ :deps  {org.clojure/clojure    {:mvn/version "1.10.1"}
+         org.clojure/test.check {:mvn/version "0.10.0"}}
+ :aliases
+ {:dev
+  {}
+
+  :cljs
+  {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.597"}}}
+
+  :test
+  {:extra-deps {lambdaisland/kaocha {:mvn/version "0.0-554"}}}}}
