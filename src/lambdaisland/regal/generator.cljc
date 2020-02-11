@@ -120,29 +120,3 @@
   (sample r)
   ("t=" "d=5Ë" "zja=·" "uatt=ß¾" "lqyk=É" "xkj=q\f" "gxupw=æ" "pkadbgmc=¯²" "f=ÃJ" "d=ç")
   )
-
-(gen/sample gen/char)
-
-
-
-    (require '[lambdaisland.regal :as regal])
-
-    ;; Regal expression, like Hiccup but for Regex
-    (def r [:cat
-            [:+ [:range \a \z]]
-            "="
-            [:+ [:not \=]]])
-
-    ;; Match values...
-    (regal/regex r)
-    ;;=> #"([a-z]+)=([^=]+)"
-
-    (re-matches (regal/regex r) "foo=bar")
-    ;;=> ["foo=bar" "foo" "bar"]
-
-    ;; ... And generate them
-    (regal/gen r)
-    ;;=> #clojure.test.check.generators.Generator{...}
-
-    (regal/sample r)
-    ;;=> ("t=" "d=5Ë" "zja=·" "uatt=ß¾" "lqyk=É" "xkj=q\f" "gxupw=æ" "pkadbgmc=¯²" "f=ÃJ" "d=ç")
