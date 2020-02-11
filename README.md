@@ -17,7 +17,11 @@ generating values that conform to the given pattern.
 Regal is Clojure and ClojureScript compatible, and glosses over some of the
 differences in Java and JavaScript regex syntax (like `\A` / `\z` vs `^` / `$`).
 
-An example:
+### Support Lambda Island Open Source
+
+If you find value in our work please consider [becoming a backer on Open Collective](http://opencollective.com/lambda-island#section-contribute)
+
+### An example
 
 ``` clojure
 (require '[lambdaisland.regal :as regal])
