@@ -9,7 +9,7 @@
                        [:* [:not \\.]]
                        [:alt \"com\" \"org\" \"net\"]
                        :end])
-     \"\\\\A[a-zA-Z0-9_-]\\\\Q@\\\\E[0-9]{3,5}([^.]*)(\\\\Qcom\\\\E|\\\\Qorg\\\\E|\\\\Qnet\\\\E)\\\\Z\" "
+     \"\\\\A[a-zA-Z0-9_-]\\\\Q@\\\\E[0-9]{3,5}(?:[^.]*)(?:\\\\Qcom\\\\E|\\\\Qorg\\\\E|\\\\Qnet\\\\E)\\\\z\" "
   #?(:clj (:import java.util.regex.Pattern)))
 
 ;; - Do we need escaping inside [:class]? caret/dash?
@@ -111,7 +111,7 @@
     (let [s (apply str (map grouped->str* g))]
       (if (::grouped (meta g))
         s
-        (str "(" s ")")))
+        (str "(?:" s ")")))
 
     :else
     (assert false g)))
