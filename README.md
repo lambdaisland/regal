@@ -65,7 +65,7 @@ If you find value in our work please consider [becoming a backer on Open Collect
   - `[:not entries...]` : like `:class`, but negates the result, equivalent to `[^...]`
   - `[:repeat form min max]` : repeat a form a number of times, like `{2,5}`
   
-### Compile time regexes
+### Regex literals
 
 Clojure supports regular expression literals, which are only evaluated once, by the reader. To get the same effect with regal regexes, you can use them as tagged literals:
 
