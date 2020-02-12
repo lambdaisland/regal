@@ -1,5 +1,5 @@
 (ns lambdaisland.regal.generator
-  (:require [lambdaisland.regal.pattern :as pattern]
+  (:require [lambdaisland.regal :as regal]
             [clojure.test.check.generators :as gen]))
 
 (declare generator)
@@ -46,13 +46,16 @@
 
 (defmethod -generator :not [r]
   ;; TODO: this is a bit hacky
-  (let [pattern (pattern/regex r)]
+  (let [pattern (regal/regex r)]
     (gen/such-that #(re-find pattern (str %)) gen/char)))
 
 (defmethod -generator :repeat [[_ r min max]]
   (gen/bind (gen/choose min max)
             (fn [i]
               (apply gen/tuple (repeat i (generator r))))))
+
+(defmethod -generator :capture [[_ & rs]]
+  (generator (into [:cat] rs)))
 
 (defn generator [r]
   (cond
@@ -106,12 +109,14 @@
   (gen/sample (gen r)))
 
 (comment
-  (sample
-   [:cat
-    :start
-    [:class [\a \z] [\A \Z] [\0 \9] \_ \-]
-    "@"
-    [:repeat [:range \0 \9] 3 5]
-    [:* [:not \.]]
-    [:alt "com" "org" "net"]
-    :end]))
+  (let [pattern [:cat
+                 :start
+                 [:class [\a \z] [\A \Z] [\0 \9] \_ \-]
+                 "@"
+                 [:capture
+                  [:repeat [:range \0 \9] 3 5]
+                  [:* [:not \.]]
+                  "."
+                  [:alt "com" "org" "net"]]
+                 :end]]
+    (map #(re-find (regal/regex pattern) %) (sample pattern))))

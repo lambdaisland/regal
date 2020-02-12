@@ -65,6 +65,7 @@ If you find value in our work please consider [becoming a backer on Open Collect
   - `[:class entries...]` : match any of the given characters or ranges, with ranges given as two element vectors. E.g. `[:class [\a \z] [\A \Z] "_" "-"]` is equivalent to `[a-zA-Z_-]`
   - `[:not entries...]` : like `:class`, but negates the result, equivalent to `[^...]`
   - `[:repeat form min max]` : repeat a form a number of times, like `{2,5}`
+  - `[:capture forms...]` : capturing group with implicit concatenation of the given forms
 
 ### BYO test.check
 

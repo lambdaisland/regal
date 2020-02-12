@@ -79,6 +79,9 @@
 (defmethod -regal->grouped :repeat [[_ r & ns]]
   `^::grouped (~(regal->grouped r) \{ ~@(interpose \, (map str ns)) \} ))
 
+(defmethod -regal->grouped :capture [[_ & rs]]
+  `^::grouped (\( ~@(regal->grouped (into [:cat] rs)) \)))
+
 (defn- regal->grouped [r]
   (cond
     (string? r)
@@ -91,16 +94,10 @@
     (get tokens r)
 
     :else
-    (-regal->grouped r)))
-
-(defn- simplify [g]
-  (if (or (string? g) (char? g) (::grouped (meta g)))
-    g
-    (let [g (map simplify g)]
-      (if (and (= 1 (count g))
-               (string? (first g)))
-        (first g)
-        g))))
+    (let [g (-regal->grouped r)]
+      (if (or (::grouped (meta g)) (next g))
+        g
+        (first g)))))
 
 (defn- grouped->str* [g]
   (cond
@@ -122,7 +119,6 @@
 (defn- compile-str [r]
   (-> r
       regal->grouped
-      simplify
       grouped->str))
 
 (defn regex [r]
