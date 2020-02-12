@@ -51,4 +51,12 @@
   (is (= #?(:clj "\\Qa\\E(?:\\Qb\\E|\\Qc\\E)"
             :cljs "a(?:b|c)")
          (reg-str (regal/regex [:cat "a" [:alt "b" "c"]]))))
+
+  (is (= #?(:clj "(\\Qabc\\E)"
+            :cljs "(abc)")
+         (reg-str (regal/regex [:capture "abc"]))))
+
+  (is (= #?(:clj "\\Qa\\E(\\Qb\\E|\\Qc\\E)"
+            :cljs "a(b|c)")
+         (reg-str (regal/regex [:cat "a" [:capture [:alt "b" "c"]]]))))
   )
