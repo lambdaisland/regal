@@ -4,3 +4,6 @@ target
 repl
 scratch.clj
 .cljs_node_repl
+
+node_modules
+out

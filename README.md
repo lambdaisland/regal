@@ -24,7 +24,8 @@ If you find value in our work please consider [becoming a backer on Open Collect
 ### An example
 
 ``` clojure
-(require '[lambdaisland.regal :as regal])
+(require '[lambdaisland.regal :as regal]
+         '[lambdaisland.regal.generators :as regal-gen])
 
 ;; Regal expression, like Hiccup but for Regex
 (def r [:cat
@@ -40,10 +41,10 @@ If you find value in our work please consider [becoming a backer on Open Collect
 ;;=> ["foo=bar" "foo" "bar"]
 
 ;; ... And generate them
-(regal/gen r)
+(regal-gen/gen r)
 ;;=> #clojure.test.check.generators.Generator{...}
 
-(regal/sample r)
+(regal-gen/sample r)
 ;;=> ("t=" "d=5Ë" "zja=·" "uatt=ß¾" "lqyk=É" "xkj=q\f" "gxupw=æ" "pkadbgmc=¯²" "f=ÃJ" "d=ç")
 ```
 
@@ -64,6 +65,11 @@ If you find value in our work please consider [becoming a backer on Open Collect
   - `[:class entries...]` : match any of the given characters or ranges, with ranges given as two element vectors. E.g. `[:class [\a \z] [\A \Z] "_" "-"]` is equivalent to `[a-zA-Z_-]`
   - `[:not entries...]` : like `:class`, but negates the result, equivalent to `[^...]`
   - `[:repeat form min max]` : repeat a form a number of times, like `{2,5}`
+
+### BYO test.check
+
+Regal does not declare a dependency on `org.clojure/test.check`. If you want to
+use the generators, you need to include this dependency yourself.
 
 ## License
 

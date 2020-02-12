@@ -12,4 +12,5 @@
   {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.597"}}}
 
   :test
-  {:extra-deps {lambdaisland/kaocha {:mvn/version "0.0-554"}}}}}
+  {:extra-deps {lambdaisland/kaocha {:mvn/version "RELEASE"}
+                lambdaisland/kaocha-cljs {:mvn/version "RELEASE"}}}}}
