@@ -1,15 +1,15 @@
 (ns lambdaisland.regal
   "Compile Regal syntax to regex patterns.
 
-     >>> (compile-str [:cat
-                       :start
-                       [:class [\\a \\z] [\\A \\Z] [\\0 \\9] \\_ \\-]
-                       \"@\"
-                       [:repeat [:range \\0 \\9] 3 5]
-                       [:* [:not \\.]]
-                       [:alt \"com\" \"org\" \"net\"]
-                       :end])
-     \"\\\\A[a-zA-Z0-9_-]\\\\Q@\\\\E[0-9]{3,5}(?:[^.]*)(?:\\\\Qcom\\\\E|\\\\Qorg\\\\E|\\\\Qnet\\\\E)\\\\z\" "
+     >>> (regex [:cat
+                 :start
+                 [:class [\\a \\z] [\\A \\Z] [\\0 \\9] \\_ \\-]
+                 \"@\"
+                 [:repeat [:range \\0 \\9] 3 5]
+                 [:* [:not \\.]]
+                 [:alt \"com\" \"org\" \"net\"]
+                 :end])
+     #\"\\A[a-zA-Z0-9_-]\\Q@\\E[0-9]{3,5}(?:[^.]*)(?:\\Qcom\\E|\\Qorg\\E|\\Qnet\\E)\\z\" "
   #?(:clj (:import java.util.regex.Pattern)))
 
 ;; - Do we need escaping inside [:class]? caret/dash?
