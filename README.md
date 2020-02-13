@@ -25,7 +25,7 @@ If you find value in our work please consider [becoming a backer on Open Collect
 
 ``` clojure
 (require '[lambdaisland.regal :as regal]
-         '[lambdaisland.regal.generators :as regal-gen])
+         '[lambdaisland.regal.generator :as regal-gen])
 
 ;; Regal expression, like Hiccup but for Regex
 (def r [:cat
@@ -33,12 +33,13 @@ If you find value in our work please consider [becoming a backer on Open Collect
         "="
         [:+ [:not \=]]])
 
-;; Match values...
+;; Convert to host-specific regex
 (regal/regex r)
-;;=> #"([a-z]+)=([^=]+)"
+;;=> #"(?:[a-z]+)\Q=\E(?:[^=]+)"
 
+;; Match strings
 (re-matches (regal/regex r) "foo=bar")
-;;=> ["foo=bar" "foo" "bar"]
+;;=> "foo=bar"
 
 ;; ... And generate them
 (regal-gen/gen r)
