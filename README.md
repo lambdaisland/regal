@@ -80,6 +80,7 @@ use the generators, you need to include this dependency yourself.
 - [test.chuck string-from-regex](https://github.com/gfredericks/test.chuck#string-from-regex)
 - [rx for Emacs Lisp](https://www.emacswiki.org/emacs/rx) (and [source](https://github.com/emacs-mirror/emacs/blob/master/lisp/emacs-lisp/rx.el))
 - [cgrand/regex](https://github.com/cgrand/regex/)
+- [ClojureVerbalExpressions](https://github.com/VerbalExpressions/ClojureVerbalExpressions)
 
 ## License
 
