@@ -72,6 +72,12 @@ If you find value in our work please consider [becoming a backer on Open Collect
 Regal does not declare a dependency on `org.clojure/test.check`. If you want to
 use the generators, you need to include this dependency yourself.
 
+### Prior Art
+
+- [irregex for Chicken Scheme](http://synthcode.com/scheme/irregex/)
+- [CL-PPRE create-scanner (Common Lisp)](http://edicl.github.io/cl-ppcre/#create-scanner2)
+- [test.chuck string-from-regex](https://github.com/gfredericks/test.chuck#string-from-regex)
+
 ## License
 
 Copyright &copy; 2020 Arne Brasseur
