@@ -9,7 +9,9 @@
                  [:* [:not \\.]]
                  [:alt \"com\" \"org\" \"net\"]
                  :end])
-     #\"\\A[a-zA-Z0-9_-]\\Q@\\E[0-9]{3,5}(?:[^.]*)(?:\\Qcom\\E|\\Qorg\\E|\\Qnet\\E)\\z\" "
+     #\"\\A[a-zA-Z0-9_-]\\Q@\\E[0-9]{3,5}[^.]*(?:\\Qcom\\E|\\Qorg\\E|\\Qnet\\E)\\z\" "
+  (:require [clojure.spec.alpha :as s]
+            [clojure.set :as set])
   #?(:clj (:import java.util.regex.Pattern)))
 
 ;; - Do we need escaping inside [:class]? caret/dash?
@@ -29,97 +31,230 @@
      :cljs
      (js/RegExp. s)))
 
-(def ^:private tokens
+;; TODO: Turn into extensible registry
+(def ^:private aliases
   {:start #?(:clj "\\A" :cljs "^")
    :end #?(:clj "\\z" :cljs "$")
    :any "."})
 
-(declare regal->grouped)
+(s/def ::literal
+  (s/conformer (fn [x]
+                 {:literal x})
+               :literal))
 
-(defmulti -regal->grouped first)
+(s/def ::alias
+  (s/conformer (fn [x]
+                 {:alias x})
+               :alias))
 
-(defmethod -regal->grouped :cat [[_ & rs]]
-  (map regal->grouped rs))
+(defn renaming-conformer [kmap]
+  (let [ikmap (set/map-invert kmap)]
+    (s/conformer (fn [x]
+                   (set/rename-keys x kmap))
+                 (fn [x]
+                   (set/rename-keys x ikmap)))))
 
-(defmethod -regal->grouped :alt [[_ & rs]]
-  (interpose \| (map regal->grouped rs)))
+(defmulti op :op)
 
-(defmethod -regal->grouped :* [[_ r]]
-  (list (regal->grouped r) \*))
+(defmethod op :cat [_]
+  (s/and (renaming-conformer {:args :forms})
+         (s/keys :req-un [::forms])))
 
-(defmethod -regal->grouped :+ [[_ r]]
-  (list (regal->grouped r) \+))
+(defmethod op :alt [_]
+  (s/and (renaming-conformer {:args :forms})
+         (s/keys :req-un [::forms])))
 
-(defmethod -regal->grouped :? [[_ & rs]]
-  (list (regal->grouped (into [:cat] rs)) \?))
+(defmethod op :capture [_]
+  (s/and (renaming-conformer {:args :forms})
+         (s/keys :req-un [::forms])))
 
-(defmethod -regal->grouped :range [[_ from to]]
-  `^::grouped (\[ ~from \- ~to \]))
+(defmethod op :* [_]
+  (s/and (renaming-conformer {:args :forms})
+         (s/keys :req-un [::forms])))
 
-(defn- compile-class [cs]
-  (reduce (fn [r c]
-            (cond
-              (string? c)
-              (conj r c)
+(defmethod op :+ [_]
+  (s/and (renaming-conformer {:args :forms})
+         (s/keys :req-un [::forms])))
 
-              (char? c)
-              (conj r c)
+(defmethod op :? [_]
+  (s/and (renaming-conformer {:args :forms})
+         (s/keys :req-un [::forms])))
 
-              (vector? c)
-              (conj r (first c) "-" (second c))))
-          []
-          cs))
+(s/def ::min nat-int?)
+(s/def ::max nat-int?)
 
-(defmethod -regal->grouped :class [[_ & cs]]
-  `^::grouped (\[ ~@(compile-class cs) \]))
+(s/def ::repeat
+  (s/and (s/cat :form any?
+                :min  any?
+                :max  (s/? any?))
+         (s/keys :req-un [::form ::min]
+                 :opt-un [::max])))
 
-(defmethod -regal->grouped :not [[_ & cs]]
-  `^::grouped (\[ \^ ~@(compile-class cs) \]))
+(defmethod op :repeat [_]
+  (s/and (renaming-conformer {:args :repeat})
+         (s/keys :req-un [::repeat])))
 
-(defmethod -regal->grouped :repeat [[_ r & ns]]
-  `^::grouped (~(regal->grouped r) \{ ~@(interpose \, (map str ns)) \} ))
 
-(defmethod -regal->grouped :capture [[_ & rs]]
-  `^::grouped (\( ~@(regal->grouped (into [:cat] rs)) \)))
+(s/def ::range-start char?)
+(s/def ::range-end char?)
 
-(defn- regal->grouped [r]
-  (cond
-    (string? r)
-    (regex-escape r)
+(s/def ::range
+  (s/and (s/cat :range-start any?
+                :range-end   any?)
+         (s/keys :req-un [::range-start ::range-end])))
 
-    (char? r)
-    (regex-escape (str r))
+(defmethod op :range [_]
+  (s/and (renaming-conformer {:args :range})
+         (s/keys :req-un [::range])))
 
-    (keyword? r)
-    (get tokens r)
+(s/def ::class
+  (s/+ (s/or :range ::range
+             :char   char?
+             :string string?)))
 
-    :else
-    (let [g (-regal->grouped r)]
-      (if (or (::grouped (meta g)) (next g))
-        g
-        (first g)))))
+(defmethod op :class [_]
+  (s/and (renaming-conformer {:args :class})
+         (s/keys :req-un [::class])))
 
-(defn- grouped->str* [g]
-  (cond
-    (or (string? g) (char? g))
-    g
+(defmethod op :not [_]
+  (s/and (renaming-conformer {:args :class})
+         (s/keys :req-un [::class])))
 
-    (or (seq? g) (vector? g))
-    (let [s (apply str (map grouped->str* g))]
-      (if (::grouped (meta g))
-        s
-        (str "(?:" s ")")))
+(s/def ::op
+  (s/multi-spec op (fn [v t] (cons t v))))
 
-    :else
-    (assert false g)))
+(s/def ::forms
+  (s/coll-of ::form))
 
-(defn- grouped->str [g]
-  (apply str (map grouped->str* g)))
+(s/def ::form
+  (s/and (s/or :literal (s/and string?  ::literal)
+               :literal (s/and char?    ::literal)
+               :alias   (s/and keyword? ::alias)
+               :op      (s/and (s/coll-of any? :into [])
+                               (s/cat :op keyword? :args (s/* any?))
+                               ::op))
+         (s/conformer (fn [[form x]]
+                        (assoc x :form form))
+                      (fn [x]
+                        [(:form x) (dissoc x :form)]))))
 
-(defn- compile-str [r]
-  (-> r
-      regal->grouped
-      grouped->str))
+(declare form->regex)
+
+(defmulti -form->regex :form)
+
+(defmethod -form->regex :literal [form]
+  (regex-escape (str (:literal form))))
+
+(defmethod -form->regex :alias [form]
+  (get aliases (:alias form)))
+
+(defmulti op->regex :op)
+
+(defmethod op->regex :cat [{:keys [forms]}]
+  ;; TODO: Join contiguous runs of literals
+  (if (next forms)
+    (map form->regex forms)
+    (form->regex (first forms)
+                 {:grouping :skip})))
+
+(defmethod op->regex :alt [op]
+  (interpose \| (map form->regex (:forms op))))
+
+(defmethod op->regex :capture [op]
+  `^::grouped (\(
+               ~@(form->regex (assoc op :op :cat)
+                              {:grouping :skip})
+               \)))
+
+(defn literal? [form]
+  (= :literal (:form form)))
+
+(defn suffix-op->regex [forms op]
+  (let [fform (first forms)]
+    (if (and (nil? (next forms))
+             (if (literal? fform)
+               (or (char? (:literal fform))
+                   (= 1 (count (:literal fform))))
+               ;; TODO: Find a better way than calling -form->regex here
+               (::grouped (some-> fform -form->regex meta))))
+      `^::grouped (~(form->regex fform) ~op)
+      `^::grouped (~(form->regex {:form :op
+                                  :op :cat
+                                  :forms forms}
+                                 {:grouping :force})
+                   ~op))))
+
+(defmethod op->regex :* [{:keys [forms]}]
+  (suffix-op->regex forms \*))
+
+(defmethod op->regex :+ [{:keys [forms]}]
+  (suffix-op->regex forms \+))
+
+(defmethod op->regex :? [{:keys [forms]}]
+  (suffix-op->regex forms \?))
+
+(defmethod op->regex :repeat [op]
+  (let [{:keys [form min max]} (:repeat op)]
+    (suffix-op->regex [form]
+                      (if (= min max)
+                        (str "{" min "}")
+                        (str "{" min "," max "}")))))
+
+(defmethod op->regex :class [op]
+  `^::grouped (\[
+               ~(when (:complement? op)
+                  \^)
+               ~@(mapcat (fn [[t x]]
+                           (if (= :range t)
+                             [(:range-start x) \- (:range-end x)]
+                             [x]))
+                         (:class op))
+               \]))
+
+(defmethod op->regex :range [op]
+  (op->regex {:form :op
+              :op :class
+              :class [[:range (:range op)]]}))
+
+(defmethod op->regex :not [op]
+  (op->regex (assoc op
+                    :op :class
+                    :complement? true)))
+
+(defmethod -form->regex :op [form]
+  (op->regex form))
+
+(defn regex-str-group [regex-str]
+  (str "(?:" regex-str ")"))
+
+(defn form->regex
+  ([form]
+   (form->regex form {}))
+  ([form {:keys [grouping]}]
+   (let [regex     (-form->regex form)
+         regex-str (if (string? regex)
+                     regex
+                     (apply str regex))]
+     (cond (= :force grouping)
+           (regex-str-group regex-str)
+
+           (string? regex)
+           regex-str
+
+           (= :skip grouping)
+           regex-str
+
+           (::grouped (meta regex))
+           regex-str
+
+           (next regex)
+           (regex-str-group regex-str)
+
+           :else
+           regex-str))))
 
 (defn regex [r]
-  (make-regex (compile-str r)))
+  (s/assert ::form r)
+  (let [form (s/conform ::form r)]
+    (when-not (s/invalid? form)
+      (make-regex (form->regex form {:grouping :skip})))))

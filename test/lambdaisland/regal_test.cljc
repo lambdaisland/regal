@@ -44,6 +44,10 @@
             :cljs  "a{3,5}")
          (reg-str (regal/regex [:repeat \a 3 5]))))
 
+  (is (= #?(:clj "(?:\\Qfoo\\E){3,5}"
+            :cljs  "(?:foo){3,5}")
+         (reg-str (regal/regex [:repeat "foo" 3 5]))))
+
   (is (= #?(:clj "\\A\\Qa\\E\\z"
             :cljs "^a$")
          (reg-str (regal/regex [:cat :start \a :end]))))

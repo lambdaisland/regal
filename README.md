@@ -35,7 +35,7 @@ If you find value in our work please consider [becoming a backer on Open Collect
 
 ;; Convert to host-specific regex
 (regal/regex r)
-;;=> #"(?:[a-z]+)\Q=\E(?:[^=]+)"
+;;=> #"[a-z]+\Q=\E[^=]+"
 
 ;; Match strings
 (re-matches (regal/regex r) "foo=bar")
