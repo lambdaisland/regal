@@ -55,6 +55,9 @@
                    (set/rename-keys x ikmap)))))
 
 (defmulti op :op)
+(defmulti grouped? :op)
+
+(defmethod grouped? :default [_] false)
 
 (defmethod op :cat [_]
   (s/and (renaming-conformer {:args :forms})
@@ -67,6 +70,8 @@
 (defmethod op :capture [_]
   (s/and (renaming-conformer {:args :forms})
          (s/keys :req-un [::forms])))
+
+(defmethod grouped? :capture [_] true)
 
 (defmethod op :* [_]
   (s/and (renaming-conformer {:args :forms})
@@ -107,6 +112,8 @@
   (s/and (renaming-conformer {:args :range})
          (s/keys :req-un [::range])))
 
+(defmethod grouped? :range [_] true)
+
 (s/def ::class
   (s/+ (s/or :range ::range
              :char   char?
@@ -116,9 +123,13 @@
   (s/and (renaming-conformer {:args :class})
          (s/keys :req-un [::class])))
 
+(defmethod grouped? :class [_] true)
+
 (defmethod op :not [_]
   (s/and (renaming-conformer {:args :class})
          (s/keys :req-un [::class])))
+
+(defmethod grouped? :not [_] true)
 
 (s/def ::op
   (s/multi-spec op (fn [v t] (cons t v))))
@@ -161,10 +172,10 @@
   (interpose \| (map form->regex (:forms op))))
 
 (defmethod op->regex :capture [op]
-  `^::grouped (\(
-               ~@(form->regex (assoc op :op :cat)
-                              {:grouping :skip})
-               \)))
+  (list \(
+        (form->regex (assoc op :op :cat)
+                     {:grouping :skip})
+        \)))
 
 (defn literal? [form]
   (= :literal (:form form)))
@@ -175,14 +186,13 @@
              (if (literal? fform)
                (or (char? (:literal fform))
                    (= 1 (count (:literal fform))))
-               ;; TODO: Find a better way than calling -form->regex here
-               (::grouped (some-> fform -form->regex meta))))
-      `^::grouped (~(form->regex fform) ~op)
-      `^::grouped (~(form->regex {:form :op
-                                  :op :cat
-                                  :forms forms}
-                                 {:grouping :force})
-                   ~op))))
+               (grouped? fform)))
+      (list (form->regex fform) op)
+      (list (form->regex {:form :op
+                          :op :cat
+                          :forms forms}
+                         {:grouping :force})
+            op))))
 
 (defmethod op->regex :* [{:keys [forms]}]
   (suffix-op->regex forms \*))
@@ -201,15 +211,15 @@
                         (str "{" min "," max "}")))))
 
 (defmethod op->regex :class [op]
-  `^::grouped (\[
-               ~(when (:complement? op)
-                  \^)
-               ~@(mapcat (fn [[t x]]
-                           (if (= :range t)
-                             [(:range-start x) \- (:range-end x)]
-                             [x]))
-                         (:class op))
-               \]))
+  `(\[
+    ~(when (:complement? op)
+       \^)
+    ~@(mapcat (fn [[t x]]
+                (if (= :range t)
+                  [(:range-start x) \- (:range-end x)]
+                  [x]))
+              (:class op))
+    \]))
 
 (defmethod op->regex :range [op]
   (op->regex {:form :op
@@ -244,7 +254,7 @@
            (= :skip grouping)
            regex-str
 
-           (::grouped (meta regex))
+           (grouped? form)
            regex-str
 
            (next regex)
