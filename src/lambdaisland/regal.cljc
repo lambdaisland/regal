@@ -56,11 +56,11 @@
               rsg)]
     `^::grouped (~rsg ~q)))
 
-(defmethod -regal->grouped :* [[_ r]]
-  (quantifier->grouped \* [r]))
+(defmethod -regal->grouped :* [[_ & rs]]
+  (quantifier->grouped \* rs))
 
-(defmethod -regal->grouped :+ [[_ r]]
-  (quantifier->grouped \+ [r]))
+(defmethod -regal->grouped :+ [[_ & rs]]
+  (quantifier->grouped \+ rs))
 
 (defmethod -regal->grouped :? [[_ & rs]]
   (quantifier->grouped \? rs))

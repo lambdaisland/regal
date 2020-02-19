@@ -27,6 +27,10 @@
             :cljs "(?:ab)*")
          (reg-str (regal/regex [:* "ab"]))))
 
+  (is (= #?(:clj "(?:\\Qa\\E\\Qb\\E)*"
+            :cljs "(?:ab)*")
+         (reg-str (regal/regex [:* "a" "b"]))))
+
   (is (= #?(:clj "(?:\\Qa\\E|\\Qb\\E)*"
             :cljs "(?:a|b)*")
          (reg-str (regal/regex [:* [:alt "a" "b"]]))))
