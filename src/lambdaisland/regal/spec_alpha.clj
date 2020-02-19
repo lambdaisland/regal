@@ -1,6 +1,7 @@
 (ns lambdaisland.regal.spec-alpha
   (:require [lambdaisland.regal :as regal]
-            [clojure.spec.alpha :as s]))
+            [clojure.spec.alpha :as s]
+            [clojure.test.check.generators :as gen]))
 
 (s/fdef regal/regex :args (s/cat :form ::regal/form))
 
@@ -13,13 +14,17 @@
   (s/or :string string?
         :char   char?))
 
-(s/def ::regal/token simple-keyword?)
+(s/def ::regal/token (set (keys (deref (var regal/tokens)))))
 
 (defmulti op first)
 
+(s/def ::regal/-op
+  (s/multi-spec op (fn [v t]
+                     (into [t] (rest v)))))
+
 (s/def ::regal/op
-  (s/and vector?
-         (s/multi-spec op (fn [v t] (cons t v)))))
+  (s/with-gen (s/and vector? ::regal/-op)
+    #(gen/fmap vec (s/gen ::regal/-op))))
 
 (defn op-spec [args-spec]
   (s/cat :op keyword?
