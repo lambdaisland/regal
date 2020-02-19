@@ -9,7 +9,7 @@
                  [:* [:not \\.]]
                  [:alt \"com\" \"org\" \"net\"]
                  :end])
-     #\"\\A[a-zA-Z0-9_-]\\Q@\\E[0-9]{3,5}(?:[^.]*)(?:\\Qcom\\E|\\Qorg\\E|\\Qnet\\E)\\z\" "
+     #\"\\A[a-zA-Z0-9_-]\\Q@\\E[0-9]{3,5}[^.]*(?:\\Qcom\\E|\\Qorg\\E|\\Qnet\\E)\\z\" "
   #?(:clj (:import java.util.regex.Pattern)))
 
 ;; - Do we need escaping inside [:class]? caret/dash?
@@ -54,7 +54,7 @@
                      (> (count (str (first rs))) 1))
               (list rsg)
               rsg)]
-    (list rsg q)))
+    `^::grouped (~rsg ~q)))
 
 (defmethod -regal->grouped :* [[_ r]]
   (quantifier->grouped \* [r]))
