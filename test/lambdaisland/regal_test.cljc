@@ -1,6 +1,6 @@
 (ns lambdaisland.regal-test
   (:require [lambdaisland.regal :as regal]
-            lambdaisland.regal.spec-alpha
+            [lambdaisland.regal.spec-alpha]
             [clojure.spec.test.alpha :as stest]
             [clojure.test :refer [deftest testing is are]]))
 
