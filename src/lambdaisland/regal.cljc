@@ -94,7 +94,24 @@
 (defmethod -regal->grouped :capture [[_ & rs]]
   `^::grouped (\( ~@(regal->grouped (into [:cat] rs)) \)))
 
-(defn- regal->grouped [r]
+(defn- regal->grouped
+  "Convert a Regal expression into an intermediate \"grouped\" expression,
+  consisting of strings and nested lists, which when all concatenated together
+  yield a regex string.
+
+  A list can have the `::grouped` metadata, which indicates the regex it
+  contains naturally introduces some kind of grouping.
+
+
+      >>> (regal->grouped \"hello\")
+      \"\\Qhello\\E\"
+
+      >>> (regal->grouped [:cat \"foo\" \"bar\"])
+      (\"\\Qfoo\\E\" \"\\Qbar\\E\")
+
+      >>> (regal->grouped [:range \"a\" \"z\"])
+      ^::grouped (\\[ \"a\" \\- \"z\" \\])"
+  [r]
   (cond
     (string? r)
     (regex-escape r)
