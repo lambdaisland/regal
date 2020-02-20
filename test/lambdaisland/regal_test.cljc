@@ -1,6 +1,10 @@
 (ns lambdaisland.regal-test
   (:require [lambdaisland.regal :as regal]
+            lambdaisland.regal.spec-alpha
+            [clojure.spec.test.alpha :as stest]
             [clojure.test :refer [deftest testing is are]]))
+
+(stest/instrument `regal/regex)
 
 (defn reg-str
   "Regex to string, remove the slashes that JavaScript likes to add."

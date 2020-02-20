@@ -67,6 +67,7 @@ If you find value in our work please consider [becoming a backer on Open Collect
   - `[:not entries...]` : like `:class`, but negates the result, equivalent to `[^...]`
   - `[:repeat form min max]` : repeat a form a number of times, like `{2,5}`
   - `[:capture forms...]` : capturing group with implicit concatenation of the given forms
+- A `clojure.spec.alpha` definition of the grammar can be made available as `:lambdaisland.regal/form` by explicitly requiring `lambdaisland.regal.spec-alpha`
 
 ### BYO test.check
 
