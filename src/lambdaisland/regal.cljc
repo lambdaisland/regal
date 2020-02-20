@@ -9,7 +9,7 @@
                  [:* [:not \\.]]
                  [:alt \"com\" \"org\" \"net\"]
                  :end])
-     #\"\\A[a-zA-Z0-9_-]\\Q@\\E[0-9]{3,5}(?:[^.]*)(?:\\Qcom\\E|\\Qorg\\E|\\Qnet\\E)\\z\" "
+     #\"\\A[a-zA-Z0-9_-]\\Q@\\E[0-9]{3,5}[^.]*(?:\\Qcom\\E|\\Qorg\\E|\\Qnet\\E)\\z\" "
   #?(:clj (:import java.util.regex.Pattern)))
 
 ;; - Do we need escaping inside [:class]? caret/dash?
@@ -44,14 +44,29 @@
 (defmethod -regal->grouped :alt [[_ & rs]]
   (interpose \| (map regal->grouped rs)))
 
-(defmethod -regal->grouped :* [[_ r]]
-  (list (regal->grouped r) \*))
+(defn quantifier->grouped [q rs]
+  (let [rsg (regal->grouped (into [:cat] rs))
+        ;; This forces explicit grouping for multi-character string
+        ;; literals so that e.g. [:* "ab"] compiles to #"(?:ab)*"
+        ;; rather than #"ab*".
+        rsg (if (and (string? rsg)
+                     (not (next rs))
+                     (> (count (str (first rs))) 1))
+              (list rsg)
+              rsg)]
+    `^::grouped (~rsg ~q)))
 
-(defmethod -regal->grouped :+ [[_ r]]
-  (list (regal->grouped r) \+))
+(defmethod -regal->grouped :* [[_ & rs]]
+  (quantifier->grouped \* rs))
+
+(defmethod -regal->grouped :+ [[_ & rs]]
+  (quantifier->grouped \+ rs))
 
 (defmethod -regal->grouped :? [[_ & rs]]
-  (list (regal->grouped (into [:cat] rs)) \?))
+  (quantifier->grouped \? rs))
+
+(defmethod -regal->grouped :repeat [[_ r & ns]]
+  (quantifier->grouped `^::grouped (\{ ~@(interpose \, (map str ns)) \}) [r]))
 
 (defmethod -regal->grouped :range [[_ from to]]
   `^::grouped (\[ ~from \- ~to \]))
@@ -75,9 +90,6 @@
 
 (defmethod -regal->grouped :not [[_ & cs]]
   `^::grouped (\[ \^ ~@(compile-class cs) \]))
-
-(defmethod -regal->grouped :repeat [[_ r & ns]]
-  `^::grouped (~(regal->grouped r) \{ ~@(interpose \, (map str ns)) \} ))
 
 (defmethod -regal->grouped :capture [[_ & rs]]
   `^::grouped (\( ~@(regal->grouped (into [:cat] rs)) \)))
