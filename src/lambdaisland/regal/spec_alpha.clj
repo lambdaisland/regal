@@ -1,7 +1,7 @@
 (ns lambdaisland.regal.spec-alpha
   (:require [lambdaisland.regal :as regal]
             [clojure.spec.alpha :as s]
-            [clojure.test.check.generators :as gen]))
+            [clojure.spec.gen.alpha :as gen]))
 
 (s/fdef regal/regex :args (s/cat :form ::regal/form))
 
