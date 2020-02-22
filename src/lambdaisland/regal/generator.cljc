@@ -4,29 +4,30 @@
 
 (declare generator)
 
-(defmulti -generator first)
+(def -generator nil)
+(defmulti -generator (fn [[op] opts] op))
 
-(defmethod -generator :cat [[_ & rs]]
-  (apply gen/tuple (map generator rs)))
+(defmethod -generator :cat [[_ & rs] opts]
+  (apply gen/tuple (map #(generator % opts) rs)))
 
-(defmethod -generator :alt [[_ & rs]]
-  (gen/one-of (map generator rs)))
+(defmethod -generator :alt [[_ & rs] opts]
+  (gen/one-of (map #(generator % opts) rs)))
 
-(defmethod -generator :* [[_ r]]
+(defmethod -generator :* [[_ r] opts]
   (gen/bind gen/pos-int
             (fn [i]
-              (apply gen/tuple (repeat i (generator r))))))
+              (apply gen/tuple (repeat i (generator r opts))))))
 
-(defmethod -generator :+ [[_ r]]
+(defmethod -generator :+ [[_ r] opts]
   (gen/bind gen/s-pos-int
             (fn [i]
-              (apply gen/tuple (repeat i (generator r))))))
+              (apply gen/tuple (repeat i (generator r opts))))))
 
-(defmethod -generator :? [[_ & rs]]
+(defmethod -generator :? [[_ & rs] opts]
   (gen/one-of [(gen/return "")
-               (generator (into [:cat] rs))]))
+               (generator (into [:cat] rs) opts)]))
 
-(defn char-code [s]
+(defn- char-code [s]
   #?(:clj
      (cond
        (string? s) (.charCodeAt ^String s 0)
@@ -35,29 +36,29 @@
      :cljs
      (.charCodeAt s 0)))
 
-(defmethod -generator :range [[_ from to]]
+(defmethod -generator :range [[_ from to] opts]
   (gen/fmap char (gen/choose (char-code from) (char-code to))))
 
-(defmethod -generator :class [[_ & cs]]
+(defmethod -generator :class [[_ & cs] opts]
   (gen/one-of (for [c cs]
                 (if (vector? c)
                   (gen/fmap char (gen/choose (char-code (first c)) (char-code (second c))))
                   (gen/return c)))))
 
-(defmethod -generator :not [r]
+(defmethod -generator :not [r opts]
   ;; TODO: this is a bit hacky
-  (let [pattern (regal/regex r)]
+  (let [pattern (regal/regex r opts)]
     (gen/such-that #(re-find pattern (str %)) gen/char)))
 
-(defmethod -generator :repeat [[_ r min max]]
+(defmethod -generator :repeat [[_ r min max] opts]
   (gen/bind (gen/choose min max)
             (fn [i]
-              (apply gen/tuple (repeat i (generator r))))))
+              (apply gen/tuple (repeat i (generator r opts))))))
 
-(defmethod -generator :capture [[_ & rs]]
-  (generator (into [:cat] rs)))
+(defmethod -generator :capture [[_ & rs] opts]
+  (generator (into [:cat] rs) opts))
 
-(defn generator [r]
+(defn- generator [r {:keys [resolver] :as opts}]
   (cond
     (string? r)
     (gen/return r)
@@ -65,15 +66,24 @@
     (char? r)
     (gen/return r)
 
-    (keyword? r)
+    (qualified-keyword? r)
+    (if resolver
+      (if-let [resolved (resolver r)]
+        (recur resolved opts)
+        (throw (ex-info (str "Unable to resolve Regal Expression " r ".")
+                        {::unresolved r})))
+      (throw (ex-info (str "Regal expression contains qualified keyword, but no resolver was specified.")
+                      {::no-resolver-for r})))
+
+    (simple-keyword? r)
     (case r
       :any gen/char
       (gen/return ""))
 
     :else
-    (-generator r)))
+    (-generator r opts)))
 
-(defn grouped->str
+(defn- grouped->str
   #?@(:clj
       [([g]
         (let [sb (StringBuilder.)]
@@ -102,8 +112,11 @@
           :else
           (assert false g)))]))
 
-(defn gen [r]
-  (gen/fmap grouped->str (generator r)))
+(defn gen
+  ([r]
+   (gen r nil))
+  ([r {:keys [resolver] :as opts}]
+   (gen/fmap grouped->str (generator r opts))))
 
 (defn sample [r]
   (gen/sample (gen r)))

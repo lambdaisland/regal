@@ -1,5 +1,6 @@
 (ns lambdaisland.regal.spec-alpha
   (:require [lambdaisland.regal :as regal]
+            [lambdaisland.regal.generator :as generator]
             [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]))
 
@@ -76,3 +77,15 @@
 
 (defmethod op :not [_]
   (op-spec ::regal/class))
+
+(defn- resolver [kw]
+  (-> kw s/spec meta ::form))
+
+(defn spec [regal]
+  (let [opts    {:resolver resolver}
+        pattern (regal/regex regal opts)]
+    (with-meta
+      (s/with-gen
+        (partial re-find pattern)
+        #(generator/gen regal opts))
+      {::form regal})))

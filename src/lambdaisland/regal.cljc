@@ -34,18 +34,31 @@
    :end #?(:clj "\\z" :cljs "$")
    :any "."})
 
-(declare regal->grouped)
 
-(defmulti -regal->grouped first)
+;; IR = Intermediate Representation
+;;
+;; Instead of going directly from Regal Expression to regex pattern we first
+;; convert to an intermediate form, consisting of potentially nested lists of
+;; strings, which when concatenated yield a regex pattern.
+;;
+;; Each list is conceptually grouped, and is typically converted into a
+;; non-capturing regex group in the final conversion. If a given list represents
+;; a regex pattern that is already treated as a single entity e.g. by
+;; quantifiers, then the list is given the metadata `{::grouped true}`
 
-(defmethod -regal->grouped :cat [[_ & rs]]
-  (map regal->grouped rs))
+(declare regal->ir)
 
-(defmethod -regal->grouped :alt [[_ & rs]]
-  (interpose \| (map regal->grouped rs)))
+(def -regal->ir nil)
+(defmulti -regal->ir (fn [[op] opts] op))
 
-(defn quantifier->grouped [q rs]
-  (let [rsg (regal->grouped (into [:cat] rs))
+(defmethod -regal->ir :cat [[_ & rs] opts]
+  (map #(regal->ir % opts) rs))
+
+(defmethod -regal->ir :alt [[_ & rs] opts]
+  (interpose \| (map #(regal->ir % opts) rs)))
+
+(defn quantifier->ir [q rs opts]
+  (let [rsg (regal->ir (into [:cat] rs) opts)
         ;; This forces explicit grouping for multi-character string
         ;; literals so that e.g. [:* "ab"] compiles to #"(?:ab)*"
         ;; rather than #"ab*".
@@ -56,20 +69,20 @@
               rsg)]
     `^::grouped (~rsg ~q)))
 
-(defmethod -regal->grouped :* [[_ & rs]]
-  (quantifier->grouped \* rs))
+(defmethod -regal->ir :* [[_ & rs] opts]
+  (quantifier->ir \* rs opts))
 
-(defmethod -regal->grouped :+ [[_ & rs]]
-  (quantifier->grouped \+ rs))
+(defmethod -regal->ir :+ [[_ & rs] opts]
+  (quantifier->ir \+ rs opts))
 
-(defmethod -regal->grouped :? [[_ & rs]]
-  (quantifier->grouped \? rs))
+(defmethod -regal->ir :? [[_ & rs] opts]
+  (quantifier->ir \? rs opts))
 
-(defmethod -regal->grouped :repeat [[_ r & ns]]
-  (quantifier->grouped `^::grouped (\{ ~@(interpose \, (map str ns)) \}) [r]))
+(defmethod -regal->ir :repeat [[_ r & ns] opts]
+  (quantifier->ir `^::grouped (\{ ~@(interpose \, (map str ns)) \}) [r] opts))
 
-(defmethod -regal->grouped :range [[_ from to]]
-  `^::grouped (\[ ~from \- ~to \]))
+(defmethod -regal->ir :range [[_ from to] opts]
+  `^::grouped (\[ ~from \- ~to \]) opts)
 
 (defn- compile-class [cs]
   (reduce (fn [r c]
@@ -85,17 +98,17 @@
           []
           cs))
 
-(defmethod -regal->grouped :class [[_ & cs]]
+(defmethod -regal->ir :class [[_ & cs] opts]
   `^::grouped (\[ ~@(compile-class cs) \]))
 
-(defmethod -regal->grouped :not [[_ & cs]]
+(defmethod -regal->ir :not [[_ & cs] opts]
   `^::grouped (\[ \^ ~@(compile-class cs) \]))
 
-(defmethod -regal->grouped :capture [[_ & rs]]
-  `^::grouped (\( ~@(regal->grouped (into [:cat] rs)) \)))
+(defmethod -regal->ir :capture [[_ & rs] opts]
+  `^::grouped (\( ~@(regal->ir (into [:cat] rs) opts) \)))
 
-(defn- regal->grouped
-  "Convert a Regal expression into an intermediate \"grouped\" expression,
+(defn- regal->ir
+  "Convert a Regal expression into an intermediate representation,
   consisting of strings and nested lists, which when all concatenated together
   yield a regex string.
 
@@ -103,15 +116,15 @@
   contains naturally introduces some kind of grouping.
 
 
-      >>> (regal->grouped \"hello\")
+      >>> (regal->ir \"hello\")
       \"\\Qhello\\E\"
 
-      >>> (regal->grouped [:cat \"foo\" \"bar\"])
+      >>> (regal->ir [:cat \"foo\" \"bar\"])
       (\"\\Qfoo\\E\" \"\\Qbar\\E\")
 
-      >>> (regal->grouped [:range \"a\" \"z\"])
+      >>> (regal->ir [:range \"a\" \"z\"])
       ^::grouped (\\[ \"a\" \\- \"z\" \\])"
-  [r]
+  [r {:keys [resolver] :as opts}]
   (cond
     (string? r)
     (regex-escape r)
@@ -119,11 +132,20 @@
     (char? r)
     (regex-escape (str r))
 
-    (keyword? r)
+    (qualified-keyword? r)
+    (if resolver
+      (if-let [resolved (resolver r)]
+        (recur resolved opts)
+        (throw (ex-info (str "Unable to resolve Regal Expression " r ".")
+                        {::unresolved r})))
+      (throw (ex-info (str "Regal expression contains qualified keyword, but no resolver was specified.")
+                      {::no-resolver-for r})))
+
+    (simple-keyword? r)
     (get tokens r)
 
     :else
-    (let [g (-regal->grouped r)]
+    (let [g (-regal->ir r opts)]
       (if (or (::grouped (meta g)) (next g))
         g
         (first g)))))
@@ -145,10 +167,20 @@
 (defn- grouped->str [g]
   (apply str (map grouped->str* g)))
 
-(defn- compile-str [r]
+(defn- compile-str [r opts]
   (-> r
-      regal->grouped
+      (regal->ir opts)
       grouped->str))
 
-(defn regex [r]
-  (make-regex (compile-str r)))
+(defn regex
+  "Convert a Regal Expression into a platform-specific regex pattern object.
+
+  Can take an options map:
+
+  - `:resolver` a function/map used to resolve namespaced keywords inside Regal
+  expressions.
+  "
+  ([r]
+   (regex r nil))
+  ([r {:keys [resolver] :as opts}]
+   (make-regex (compile-str r opts))))
