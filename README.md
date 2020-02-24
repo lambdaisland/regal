@@ -69,14 +69,46 @@ If you find value in our work please consider [becoming a backer on Open Collect
   - `[:capture forms...]` : capturing group with implicit concatenation of the given forms
 - A `clojure.spec.alpha` definition of the grammar can be made available as `:lambdaisland.regal/form` by explicitly requiring `lambdaisland.regal.spec-alpha`
 
-### BYO test.check
+### Use with spec.alpha
 
-Regal does not declare a dependency on `org.clojure/test.check`. If you want to
-use the generators, you need to include this dependency yourself.
+``` clojure
+(require '[lambdaisland.regal.spec-alpha :as regal-spec]
+         '[clojure.spec.alpha :as s]
+         '[clojure.spec.gen.alpha :as gen])
+
+(s/def ::x-then-y (regal-spec/spec [:cat [:+ "x"] "-" [:+ "y"]]))
+
+(s/def ::xy-with-stars (regal-spec/spec [:cat "*" ::x-then-y "*"]))
+
+(s/valid? ::xy-with-stars "*xxx-yy*")
+;; => true
+
+(gen/sample (s/gen ::xy-with-stars))
+;; => ("*x-y*"
+;;     "*xx-y*"
+;;     "*x-y*"
+;;     "*xxxx-y*"
+;;     "*xxx-yyyy*"
+;;     "*xxxx-yyy*"
+;;     "*xxxxxxx-yyyyy*"
+;;     "*xx-yyy*"
+;;     "*xxxxx-y*"
+;;     "*xxx-yyyy*")
+```
+
+### BYO test.check / spec-alpha
+
+Regal does not declare any dependencies. This lets people who only care about
+using Regal Expressions to replace normal regexes to require
+`lambdaisland.regal` without imposing extra dependencies upon them.
+
+If you want to use `lambdaisland.regal.generator` you will require
+`org.clojure/test.check`. For `lambdisland.regal.spec-alpha` you will
+additionally need `org.clojure/spec-alpha`.
 
 ### Contributing
 
-Everyone has a right to submit patches to this projects, and thus be a contributor.
+Everyone has a right to submit patches to this projects, and thus become a contributor.
 
 Contributors MUST
 
