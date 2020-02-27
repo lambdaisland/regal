@@ -1,13 +1,20 @@
 {:paths ["src" "test" "resources"]
- :deps  {org.clojure/clojure    {:mvn/version "1.10.1"}}
+ :deps  {org.clojure/clojure {:mvn/version "1.10.1"}}
 
  :aliases
  {:dev
   {}
 
+  :spec-alpha
+  {:extra-deps {org.clojure/spec.alpha {:mvn/version "0.2.176"}
+                expound                {:mvn/version "0.8.4"}}}
+
   :spec-alpha2
   {:extra-deps {org.clojure/spec-alpha2 {:git/url "https://github.com/clojure/spec-alpha2.git"
                                          :sha     "de38650874c6f0bc19e7755feab4d65b3fffb268"}}}
+
+  :instaparse
+  {:extra-deps {instaparse {:mvn/version "1.4.10"}}}
 
   :test-check
   {:extra-deps {org.clojure/test.check {:mvn/version "0.10.0"}}}
@@ -19,5 +26,5 @@
   {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.597"}}}
 
   :test
-  {:extra-deps {lambdaisland/kaocha {:mvn/version "RELEASE"}
+  {:extra-deps {lambdaisland/kaocha      {:mvn/version "RELEASE"}
                 lambdaisland/kaocha-cljs {:mvn/version "RELEASE"}}}}}

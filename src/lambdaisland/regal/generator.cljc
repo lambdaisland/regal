@@ -4,7 +4,6 @@
 
 (declare generator)
 
-(def -generator nil)
 (defmulti -generator (fn [[op] opts] op))
 
 (defmethod -generator :cat [[_ & rs] opts]
@@ -35,9 +34,6 @@
        :else       (assert false s))
      :cljs
      (.charCodeAt s 0)))
-
-(defmethod -generator :range [[_ from to] opts]
-  (gen/fmap char (gen/choose (char-code from) (char-code to))))
 
 (defmethod -generator :class [[_ & cs] opts]
   (gen/one-of (for [c cs]
@@ -127,7 +123,7 @@
                  [:class [\a \z] [\A \Z] [\0 \9] \_ \-]
                  "@"
                  [:capture
-                  [:repeat [:range \0 \9] 3 5]
+                  [:repeat [:class [\0 \9]] 3 5]
                   [:* [:not \.]]
                   "."
                   [:alt "com" "org" "net"]]

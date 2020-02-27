@@ -5,7 +5,7 @@
                  :start
                  [:class [\\a \\z] [\\A \\Z] [\\0 \\9] \\_ \\-]
                  \"@\"
-                 [:repeat [:range \\0 \\9] 3 5]
+                 [:repeat [:class [\\0 \\9]] 3 5]
                  [:* [:not \\.]]
                  [:alt \"com\" \"org\" \"net\"]
                  :end])
@@ -48,7 +48,6 @@
 
 (declare regal->ir)
 
-(def -regal->ir nil)
 (defmulti -regal->ir (fn [[op] opts] op))
 
 (defmethod -regal->ir :cat [[_ & rs] opts]
@@ -81,9 +80,6 @@
 (defmethod -regal->ir :repeat [[_ r & ns] opts]
   (quantifier->ir `^::grouped (\{ ~@(interpose \, (map str ns)) \}) [r] opts))
 
-(defmethod -regal->ir :range [[_ from to] opts]
-  `^::grouped (\[ ~from \- ~to \]) opts)
-
 (defn- compile-class [cs]
   (reduce (fn [r c]
             (cond
@@ -94,7 +90,7 @@
               (conj r c)
 
               (vector? c)
-              (conj r (first c) "-" (second c))))
+              (conj r (first c) \- (second c))))
           []
           cs))
 
@@ -116,13 +112,13 @@
   contains naturally introduces some kind of grouping.
 
 
-      >>> (regal->ir \"hello\")
+      >>> (regal->ir \"hello\" {})
       \"\\Qhello\\E\"
 
-      >>> (regal->ir [:cat \"foo\" \"bar\"])
+      >>> (regal->ir [:cat \"foo\" \"bar\"] {})
       (\"\\Qfoo\\E\" \"\\Qbar\\E\")
 
-      >>> (regal->ir [:range \"a\" \"z\"])
+      >>> (regal->ir [:class [\"a\" \"z\"]] {})
       ^::grouped (\\[ \"a\" \\- \"z\" \\])"
   [r {:keys [resolver] :as opts}]
   (cond

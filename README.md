@@ -17,9 +17,11 @@ generating values that conform to the given pattern.
 Regal is Clojure and ClojureScript compatible, and glosses over some of the
 differences in Java and JavaScript regex syntax (like `\A` / `\z` vs `^` / `$`).
 
+<!-- opencollective -->
 ### Support Lambda Island Open Source
 
 If you find value in our work please consider [becoming a backer on Open Collective](http://opencollective.com/lambda-island#section-contribute)
+<!-- /opencollective -->
 
 ### An example
 
@@ -29,7 +31,7 @@ If you find value in our work please consider [becoming a backer on Open Collect
 
 ;; Regal expression, like Hiccup but for Regex
 (def r [:cat
-        [:+ [:range \a \z]]
+        [:+ [:class [\a \z]]]
         "="
         [:+ [:not \=]]])
 
@@ -62,7 +64,6 @@ If you find value in our work please consider [becoming a backer on Open Collect
   - `[:* form]` : match the given form zero or more times
   - `[:+ form]` : match the given form one or more times
   - `[:? form]` : match the given form zero or one time
-  - `[:range start end]` : match a range of characters, like `[a-z]`. Takes one-character strings or characters.
   - `[:class entries...]` : match any of the given characters or ranges, with ranges given as two element vectors. E.g. `[:class [\a \z] [\A \Z] "_" "-"]` is equivalent to `[a-zA-Z_-]`
   - `[:not entries...]` : like `:class`, but negates the result, equivalent to `[^...]`
   - `[:repeat form min max]` : repeat a form a number of times, like `{2,5}`
@@ -106,6 +107,7 @@ If you want to use `lambdaisland.regal.generator` you will require
 `org.clojure/test.check`. For `lambdisland.regal.spec-alpha` you will
 additionally need `org.clojure/spec-alpha`.
 
+<!-- contributing -->
 ### Contributing
 
 Everyone has a right to submit patches to this projects, and thus become a contributor.
@@ -136,6 +138,7 @@ feedback on it.
 `**` As long as this project has not seen a public release (i.e. is not on Clojars)
 we may still consider making breaking changes, if there is consensus that the
 changes are justified.
+<!-- /contributing -->
 
 ### Prior Art
 

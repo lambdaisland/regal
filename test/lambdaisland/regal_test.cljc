@@ -47,9 +47,6 @@
             :cljs "a?")
          (reg-str (regal/regex [:? "a"]))))
 
-  (is (= "[a-z]"
-         (reg-str (regal/regex [:range \a \z]))))
-
   (is (= "[a-z0-9_-]"
          (reg-str (regal/regex [:class [\a \z] [\0 \9] \_ \-]))))
 
