@@ -73,8 +73,35 @@
 
     (simple-keyword? r)
     (case r
-      :any gen/char
-      (gen/return ""))
+      :any
+      gen/char
+
+
+      :digit
+      (recur [:class [\0 \9]] opts)
+
+      :non-digit
+      (recur [:not [\0 \9]] opts)
+
+      :word
+      (recur [:class [\a \z] [\A \Z] [\0 \9] \_] opts)
+
+      :non-word
+      (recur [:not [\a \z] [\A \Z] [\0 \9] \_] opts)
+
+      :whitespace
+      (recur [:class \space \tab \newline \u000B \formfeed \return] opts)
+
+      :non-whitespace
+      (recur [:not \space \tab \newline \u000B \formfeed \return] opts)
+
+      :start
+      (gen/return "")
+
+      :end
+      (gen/return "")
+
+      (throw (ex-info (str "Unrecognized regal token: " r) {::unrecognized-token r})))
 
     :else
     (-generator r opts)))
@@ -118,10 +145,12 @@
   (gen/sample (gen r)))
 
 (comment
+  (sample [:cat :digit :whitespace :word])
+
   (let [pattern [:cat
                  :start
                  [:class [\a \z] [\A \Z] [\0 \9] \_ \-]
-                 "@"
+
                  [:capture
                   [:repeat [:class [\0 \9]] 3 5]
                   [:* [:not \.]]

@@ -32,8 +32,13 @@
 (def ^:private tokens
   {:start #?(:clj "\\A" :cljs "^")
    :end #?(:clj "\\z" :cljs "$")
-   :any "."})
-
+   :any "."
+   :digit "\\d"
+   :non-digit "\\D"
+   :word "\\w"
+   :non-word "\\W"
+   :whitespace "\\s"
+   :non-whitespace "\\S"})
 
 ;; IR = Intermediate Representation
 ;;
