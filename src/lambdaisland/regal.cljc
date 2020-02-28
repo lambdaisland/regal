@@ -61,16 +61,41 @@
 (defmethod -regal->ir :alt [[_ & rs] opts]
   (interpose \| (map #(regal->ir % opts) rs)))
 
+;; Still missing a few like \u{xxx}
+(defn single-character? [s]
+  (when (string? s)
+    (case (count s)
+      1
+      true
+
+      2
+      (or (= s "\\\\")
+          (re-find #"\\0[0-7]" s)
+          (re-find #"\\[trnfaedDsSwW]" s))
+
+      3
+      (or (re-find #"\\0[0-7]{2}" s)
+          (re-find #"\\x[0-9a-zA-Z]{2}" s)
+          (re-find #"\\c." s))
+
+      4
+      (re-find #"\\0[0-3][0-7]{2}" s)
+
+      5
+      (or (when-let [[_ match] (re-find #"\\Q(.*)\\E" s)]
+            (single-character? match))
+          (re-find #"\\u[0-9a-zA-Z]{4}" s))
+
+      false)))
+
 (defn quantifier->ir [q rs opts]
   (let [rsg (regal->ir (into [:cat] rs) opts)
         ;; This forces explicit grouping for multi-character string
         ;; literals so that e.g. [:* "ab"] compiles to #"(?:ab)*"
         ;; rather than #"ab*".
-        rsg (if (and (string? rsg)
-                     (not (next rs))
-                     (> (count (str (first rs))) 1))
-              (list rsg)
-              rsg)]
+        rsg (if (or (seq? rsg) (single-character? rsg))
+              rsg
+              (list rsg))]
     `^::grouped (~rsg ~q)))
 
 (defmethod -regal->ir :* [[_ & rs] opts]
