@@ -11,31 +11,24 @@
   #? (:clj (read-string (slurp (io/resource "lambdaisland/regal/test_cases.edn")))
       :cljs (inline-resource "lambdaisland/regal/test_cases.edn")))
 
-(defn flavor [value]
-  (or (some #{:java8 :java9 :java :ecma} (keys (meta value))) :common))
+(defn flavor-parents [flavor]
+  (->> flavor
+       (iterate (comp first (partial parents regal/flavor-hierarchy)))
+       (take-while identity)))
 
-(defn flav-match? [value flav]
-  (or (= :any flav)
-      (isa? regal/flavor-hierarchy flav (flavor value))))
-
-(defn filter-cases [cases flav]
-  (for [[pattern form & tests :as case] cases
-        :let [[canonical tests] (if (string? (first tests))
-                                  [(first tests) (rest tests)]
-                                  [pattern tests])]
-        :when (flav-match? case flav)]
-    {:pattern   pattern
-     :form      form
-     :canonical canonical
-     :flavor    (flavor case)
-     :tests     (for [test tests
-                      :when (flav-match? test flav)]
-                  test)}))
+(defn format-cases [cases]
+  (for [[form pattern & tests :as case] cases
+        :let [[props tests] (if (map? (first tests))
+                              [(first tests) (rest tests)]
+                              [{} tests])]]
+    (merge
+     {:pattern   pattern
+      :form      form
+      :tests     tests}
+     props)))
 
 (defn test-cases
   ([]
-   (test-cases regal/*flavor*))
-  ([flav]
    (let [cases (read-test-cases)]
      (loop [[id & cases] cases
             result []]
@@ -43,7 +36,8 @@
          (recur (drop-while vector? cases)
                 (conj result
                       {:id id
-                       :cases (filter-cases (take-while vector? cases) flav)}))
+                       :cases (format-cases (take-while vector? cases))}))
          result)))))
 
+#_
 (test-cases)

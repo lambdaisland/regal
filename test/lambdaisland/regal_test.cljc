@@ -76,15 +76,24 @@
     "}" "\\}"))
 
 (deftest data-based-tests
-  (doseq [{:keys [id cases]} (test-util/test-cases :any)
-          {:keys [canonical form flavor tests]} cases]
+  (doseq [{:keys [id cases]} (test-util/test-cases)
+          {:keys [form pattern equivalent tests]} cases]
+    (doseq [flavor [:java8 :java9 :ecma]
+            :let [pattern (if (map? pattern)
+                            (some pattern (test-util/flavor-parents flavor))
+                            pattern)]]
+      (testing (str "Generated pattern is correct (" (name id) ") " (pr-str form) " (" flavor ")")
+        (regal/with-flavor flavor
+          (is (= pattern (regal/pattern (regal/regex form)))))))
 
-    (testing (str (name id) " " form " " flavor)
-      (regal/with-flavor flavor
-        (is (= canonical (regal/pattern (regal/regex form)))))
+    (doseq [[input match] tests]
+      (testing (str "Test case " (pr-str form) " matches " (pr-str input))
 
-      (when (isa? (regal/runtime-flavor) flavor)
-        (doseq [[input match :as test] tests
-                :when (test-util/flav-match? test (regal/runtime-flavor))]
-          (testing (str (pr-str form) " matches " (pr-str input))
-            (is (= match (re-find (regal/regex form) input)))))))))
+        (testing "Generated pattern matches"
+          (is (= match (re-find (regal/regex form) input))))
+
+        (doseq [pattern (if (map? equivalent)
+                          (some equivalent (test-util/flavor-parents (regal/runtime-flavor)))
+                          equivalent)]
+          (testing (str "Alternative equivalent pattern " (pr-str pattern) " matches")
+            (is (= match (re-find (regal/compile pattern) input)))))))))

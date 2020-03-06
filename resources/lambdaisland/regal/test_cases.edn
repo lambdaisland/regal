@@ -4,73 +4,75 @@
 ;; Based on the comparison tables at http://www.regular-expressions.info, with
 ;; additional research and resources used where necessary.
 ;;
-;; Test cases consist of a regex pattern, a regal form, optionally a canonical
-;; regex pattern, and a sequence of input/match pairs.
+;; Test cases consist of a a regal form, the corresponding regex pattern, an
+;; optional map with extra properties (currently equivalent regex forms) and a
+;; sequence of input/match pairs.
 ;;
-;; The regex pattern and regal form should round-trip, unless a canonical
-;; pattern is given. In that case the canonical pattern and regal form
-;; round-trip, and the conversion from the non-canonical pattern to the regex
-;; form is only one-way.
+;; When the corresponding patterns depends on the regex flavor a map is used
+;; instead to provide multiple patterns.
 ;;
-;; Differences between regex flavors are marked with metadata tags
 ;; Flavors:
-;; - :java
-;; - :ecma
+;; - :java    Any Java
+;; - :ecma    Any ECMAScript / JavaScript
+;; - :java8   Java 1.8 (earlier not supported)
+;; - :java9   Java 9 or later
+;; - :common  Supported in all flavors
 ;;
-;; Subflavors
-;; - :java8 Java 1.8 or earlier
-;; - :java9 Java 9 or later
-;;
-[:character-literals
- ;; Regex
- ;; | Regal
+[;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;; Characters
+ ;; http://www.regular-expressions.info/refcharacters.html
+
+ :character-literals
+ ;; Regal
+ ;; | Pattern
  ;; |  |  Input
  ;; |  |    |  Match
  ;; |  |    |   |
  ["a" "a" ["a" "a"]]
 
  :literal-curly-brace
- ^:java ["\\{" "{" ["{" "{"]]
- ^:ecma ["{" "{" "\\{" ["{" "{"]]
+ ["{" "\\{" ["{" "{"]]
 
  :backslack-escaped-metacharacter
- ["\\$" "$" ["$" "$"]]
- ["\\(" "(" ["(" "("]]
- ["\\)" ")" [")" ")"]]
- ["\\*" "*" ["*" "*"]]
- ["\\*" "*" ["*" "*"]]
- ["\\+" "+" ["+" "+"]]
- ["\\." "." ["." "."]]
- ["\\?" "?" ["?" "?"]]
- ["\\[" "[" ["[" "["]]
- ["\\]" "]" ["]" "]"]]
- ["\\\\" "\\" ["\\" "\\"]]
- ["\\^" "^" ["^" "^"]]
- ["\\{" "{" ["{" "{"]]
- ["\\|" "|" ["|" "|"]]
- ["\\}" "}" ["}" "}"]]
+ ["$" "\\$" ["$" "$"]]
+ ["(" "\\(" ["(" "("]]
+ [")" "\\)" [")" ")"]]
+ ["*" "\\*" ["*" "*"]]
+ ["*" "\\*" ["*" "*"]]
+ ["+" "\\+" ["+" "+"]]
+ ["." "\\." ["." "."]]
+ ["?" "\\?" ["?" "?"]]
+ ["[" "\\[" ["[" "["]]
+ ["]" "\\]" ["]" "]"]]
+ ["\\" "\\\\" ["\\" "\\"]]
+ ["^" "\\^" ["^" "^"]]
+ ["{" "\\{" ["{" "{"]]
+ ["|" "\\|" ["|" "|"]]
+ ["}" "\\}" ["}" "}"]]
 
  :escape-sequence
- ;; Regex       Regal  Canonical form
- ;;  |           |      |
- ^:java
- ["\\Qa+-*/\\E" "a+-*/" "a\\+-\\*/"
+ ["a+-*/" "a\\+-\\*/"
+  {:equivalent {:java ["\\Qa+-*/\\E"]}}
   ["cba+-*/" "a+-*/"]]
 
  :hexadecimal-escape
- ["\\x60" "u" "u"
+ ["u" "u"
+  {:equivalent ["\\x75"]}
   ["u" "u"]]
- ["\\x09" "\t" "\t"
+ ["\t" "\t"
+  {:equivalent ["\\x09"]}
   ["\t" "\t"]]
 
  :lf-cr-tab
- ["\\n" :newline ["\n" "\n"]]
- ["\\r" :return ["\r" "\r"]]
- ["\\t" :tab ["\t" "\t"]]
-
+ [:newline "\\n" ["\n" "\n"]]
+ [:return "\\r" ["\r" "\r"]]
+ [:tab "\\t" ["\t" "\t"]]
 
  :line-break
- ["\\R" :line-break
+ [:line-break
+  {:java8 "\\R"
+   :java9 "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"
+   :ecma  "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"}
   ["\r" "\r"]
   ["\n" "\n"]
   ["\f" "\f"]
@@ -80,14 +82,46 @@
   ["\u2028" "\u2028"] ;; <LINE SEPARATOR>
   ["\u2029" "\u2029"]] ;; <PARAGRAPH SEPARATOR>
 
- ^:java
- ["\\R\\R" [:cat :line-break :line-break]
+ [[:cat :line-break :line-break]
+  {:java8 "\\R\\R"
+   :java9 "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"
+   :ecma  "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"}
   ["\r\r" "\r\r"]
   ["\n\n" "\n\n"]
   ["\f\f" "\f\f"]
   ["\u000B\u0085" "\u000B\u0085"]
-  ;; https://bugs.openjdk.java.net/browse/JDK-8176029
-  ^:java ^:java8 ["\r\n" nil]     ;; no match, \r\n is "indivisible" w.r.t \R
-  ^:java ^:java9 ["\r\n" "\r\n"]] ;; Java 9 and later does match
+  ["\r\n" nil]]    ;; no match, \r\n is "indivisible" w.r.t \R
 
+ :character-escape
+ [:alert {:java "\\a" :ecma "\\x07"} ["\u0007" "\u0007"]]
+ [:escape {:java "\\e" :ecma "\\x1B"} ["\u001B" "\u001B"]]
+ [:form-feed "\\f" ["\f" "\f"]]
+ [:vertical-whitespace {:java "\\v"
+                        :ecma "[\\n\\x0B\\f\\r\\x85\\u2028\\u2029]"}
+  ["\n" "\n"]
+  ["\r" "\r"]
+  ["\f" "\f"]
+  ["\u000B" "\u000B"]
+  ["\u0085" "\u0085"]
+  ["\u2028" "\u2028"]
+  ["\u2029" "\u2029"]]
+
+ [:vertical-tab {:java "\\x0B"
+                 :ecma "\\v"}
+  ["\n" nil]
+  ["\r" nil]
+  ["\f" nil]
+  ["\u000B" "\u000B"]
+  ["\u0085" nil]
+  ["\u2028" nil]
+  ["\u2029" nil]]
+
+ :control
+ [[:ctrl \A] "\\cA" ["\u0001" "\u0001"]]
+ [[:ctrl "J"] "\\cJ" ["\n" "\n"]]
+
+ ;; Not doing octal notation (e.g. \010). Most of them are only supported in
+ ;; JavaScript, and there are plenty of other options to refer to specific
+ ;; codepoints. May revisit when we start parsing in earnest to support full
+ ;; round tripping.
  ]

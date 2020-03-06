@@ -10,6 +10,7 @@
                  [:alt \"com\" \"org\" \"net\"]
                  :end])
      #\"\\A[a-zA-Z0-9_-]\\Q@\\E[0-9]{3,5}[^.]*(?:\\Qcom\\E|\\Qorg\\E|\\Qnet\\E)\\z\" "
+  (:refer-clojure :exclude [compile])
   (:require [clojure.string :as str])
   #?(:clj (:import java.util.regex.Pattern)
      :cljs (:require-macros [lambdaisland.regal :refer [with-flavor]])))
@@ -21,7 +22,7 @@
 (def flavor-hierarchy (-> (make-hierarchy)
                           (derive :java :common)
                           (derive :ecma :common)
-                          (derive :java8 :java)   ; <= Java 8
+                          (derive :java8 :java)   ; = Java 8
                           (derive :java9 :java))) ; >= Java 9
 
 (defn runtime-flavor
@@ -39,7 +40,8 @@
    (defmacro with-flavor
      "Set the flavor of regex to use for generating and parsing regex patterns.
   Defaults to the flavor understood by the runtime. `flavor` can be `:ecma`,
-  `:java8` (Java 8 or earlier) or `:java9` (Java 9 or later)."
+  `:java8` (Java 8) or `:java9` (Java 9 or later). Earlier Java versions are not
+  officially supported, meaning some patterns will behave differently."
      [flavor & body]
      `(binding [*flavor* ~flavor]
         ~@body)))
@@ -95,8 +97,10 @@
 
 (defmethod token->ir [:start :java] [_] "\\A")
 (defmethod token->ir [:start :ecma] [_] "^")
+
 (defmethod token->ir [:end :java] [_] "\\z")
 (defmethod token->ir [:end :ecma] [_] "$")
+
 (defmethod token->ir [:any :common] [_] ".")
 (defmethod token->ir [:digit :common] [_] "\\d")
 (defmethod token->ir [:non-digit :common] [_] "\\D")
@@ -104,10 +108,26 @@
 (defmethod token->ir [:non-word :common] [_] "\\W")
 (defmethod token->ir [:whitespace :common] [_] "\\s")
 (defmethod token->ir [:non-whitespace :common] [_] "\\S")
-(defmethod token->ir [:line-break :common] [_] "\\R")
 (defmethod token->ir [:newline :common] [_] "\\n")
 (defmethod token->ir [:return :common] [_] "\\r")
 (defmethod token->ir [:tab :common] [_] "\\t")
+(defmethod token->ir [:form-feed :common] [_] "\\f")
+
+(defmethod token->ir [:line-break :java8] [_] "\\R")
+(defmethod token->ir [:line-break :java9] [_] "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])")
+(defmethod token->ir [:line-break :ecma] [_] "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])")
+
+(defmethod token->ir [:alert :java] [_] "\\a")
+(defmethod token->ir [:alert :ecma] [_] "\\x07")
+
+(defmethod token->ir [:escape :java] [_] "\\e")
+(defmethod token->ir [:escape :ecma] [_] "\\x1B")
+
+(defmethod token->ir [:vertical-whitespace :java] [_] "\\v")
+(defmethod token->ir [:vertical-whitespace :ecma] [_] "[\\n\\x0B\\f\\r\\x85\\u2028\\u2029]")
+
+(defmethod token->ir [:vertical-tab :java] [_] "\\x0B")
+(defmethod token->ir [:vertical-tab :ecma] [_] "\\v")
 
 (declare regal->ir)
 
@@ -134,7 +154,7 @@
       3
       (or (re-find #"\\0[0-7]{2}" s)
           (re-find #"\\x[0-9a-zA-Z]{2}" s)
-          (re-find #"\\c." s))
+          (re-find #"\\c[A-Z]" s))
 
       4
       (re-find #"\\0[0-3][0-7]{2}" s)
@@ -192,6 +212,11 @@
 
 (defmethod -regal->ir [:capture :common] [[_ & rs] opts]
   `^::grouped (\( ~@(regal->ir (into [:cat] rs) opts) \)))
+
+(defmethod -regal->ir [:ctrl :common] [[_ ch] opts]
+  (let [ch (if (string? ch) (first ch) ch)]
+    (assert (<= (long \A) (long ch) (long \Z)))
+    (list \\ \c ch)))
 
 (defn- regal->ir
   "Convert a Regal expression into an intermediate representation,
