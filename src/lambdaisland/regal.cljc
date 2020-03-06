@@ -10,35 +10,70 @@
                  [:alt \"com\" \"org\" \"net\"]
                  :end])
      #\"\\A[a-zA-Z0-9_-]\\Q@\\E[0-9]{3,5}[^.]*(?:\\Qcom\\E|\\Qorg\\E|\\Qnet\\E)\\z\" "
-  #?(:clj (:import java.util.regex.Pattern)))
+  (:require [clojure.string :as str])
+  #?(:clj (:import java.util.regex.Pattern)
+     :cljs (:require-macros [lambdaisland.regal :refer [with-flavor]])))
 
 ;; - Do we need escaping inside [:class]? caret/dash?
 
 #?(:clj (set! *warn-on-reflection* true))
 
-(defn- regex-escape [s]
-  #?(:clj
-     (Pattern/quote s)
-     ;; https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#Escaping
-     :cljs
-     (.replace s (js* "/[.*+?^${}()|[\\]\\\\]/g") "\\\\$&")))
+(def flavor-hierarchy (-> (make-hierarchy)
+                          (derive :java :common)
+                          (derive :ecma :common)
+                          (derive :java8 :java)   ; <= Java 8
+                          (derive :java9 :java))) ; >= Java 9
 
-(defn- make-regex [s]
+(defn runtime-flavor
+  "The regex flavor that the current runtime understands."
+  []
+  #?(:clj (let [version (re-find #"\A\d+" (System/getProperty "java.runtime.version"))]
+            (if (= "1" version) ;; 1.8 vs 9 / 11
+              :java8
+              :java9))
+     :cljs :ecma))
+
+(def ^:dynamic *flavor* (runtime-flavor))
+
+#?(:clj
+   (defmacro with-flavor
+     "Set the flavor of regex to use for generating and parsing regex patterns.
+  Defaults to the flavor understood by the runtime. `flavor` can be `:ecma`,
+  `:java8` (Java 8 or earlier) or `:java9` (Java 9 or later)."
+     [flavor & body]
+     `(binding [*flavor* ~flavor]
+        ~@body)))
+
+(defn escape
+  "Escape a regex pattern, so that, when compiled to a regex object, it will match
+  all characters literally."
+  [s]
+  ;; The replacement string backreference escaping seems to work differently
+  ;; in clj vs cljs, this may be a ClojureScript bug
+  (str/replace s #"([.*+?^${}()|\[\]\\])" #?(:clj "\\\\$1" :cljs "\\$1")))
+
+(defn pattern
+  "Regex to string, remove the slashes that JavaScript likes to add. This will
+  drop any regex modifiers."
+  [r]
+  #?(:clj (str r)
+     :cljs (let [s (str r)
+                 ;; there may be modifiers after the last slash
+                 len (.lastIndexOf s "/")]
+             (-> s
+                 (.substring 1 len)
+                 ;; Undo escaping of forward slashes, in JS this is necessary to
+                 ;; distinguish them from regex boundaries, but for us they are
+                 ;; irrelevant
+                 (str/replace "\\/" "/")))))
+
+(defn compile
+  "Compile a regex pattern (string) to a regex."
+  [s]
   #?(:clj
      (Pattern/compile s)
      :cljs
      (js/RegExp. s)))
-
-(def ^:private tokens
-  {:start #?(:clj "\\A" :cljs "^")
-   :end #?(:clj "\\z" :cljs "$")
-   :any "."
-   :digit "\\d"
-   :non-digit "\\D"
-   :word "\\w"
-   :non-word "\\W"
-   :whitespace "\\s"
-   :non-whitespace "\\S"})
 
 ;; IR = Intermediate Representation
 ;;
@@ -51,14 +86,37 @@
 ;; a regex pattern that is already treated as a single entity e.g. by
 ;; quantifiers, then the list is given the metadata `{::grouped true}`
 
+(defmulti token->ir (fn [token] [token *flavor*]) :hierarchy #'flavor-hierarchy)
+
+(defmethod token->ir :default [token]
+  (throw (ex-info (str "Unrecognized token: " token)
+                  {::unrecognized-token token
+                   ::flavor *flavor*})))
+
+(defmethod token->ir [:start :java] [_] "\\A")
+(defmethod token->ir [:start :ecma] [_] "^")
+(defmethod token->ir [:end :java] [_] "\\z")
+(defmethod token->ir [:end :ecma] [_] "$")
+(defmethod token->ir [:any :common] [_] ".")
+(defmethod token->ir [:digit :common] [_] "\\d")
+(defmethod token->ir [:non-digit :common] [_] "\\D")
+(defmethod token->ir [:word :common] [_] "\\w")
+(defmethod token->ir [:non-word :common] [_] "\\W")
+(defmethod token->ir [:whitespace :common] [_] "\\s")
+(defmethod token->ir [:non-whitespace :common] [_] "\\S")
+(defmethod token->ir [:line-break :common] [_] "\\R")
+(defmethod token->ir [:newline :common] [_] "\\n")
+(defmethod token->ir [:return :common] [_] "\\r")
+(defmethod token->ir [:tab :common] [_] "\\t")
+
 (declare regal->ir)
 
-(defmulti -regal->ir (fn [[op] opts] op))
+(defmulti -regal->ir (fn [[op] opts] [op *flavor*]) :hierarchy #'flavor-hierarchy)
 
-(defmethod -regal->ir :cat [[_ & rs] opts]
+(defmethod -regal->ir [:cat :common] [[_ & rs] opts]
   (map #(regal->ir % opts) rs))
 
-(defmethod -regal->ir :alt [[_ & rs] opts]
+(defmethod -regal->ir [:alt :common] [[_ & rs] opts]
   (interpose \| (map #(regal->ir % opts) rs)))
 
 ;; Still missing a few like \u{xxx}
@@ -82,9 +140,11 @@
       (re-find #"\\0[0-3][0-7]{2}" s)
 
       5
-      (or (when-let [[_ match] (re-find #"\\Q(.*)\\E" s)]
-            (single-character? match))
-          (re-find #"\\u[0-9a-zA-Z]{4}" s))
+      (if (isa? *flavor* :java)
+        (or (when-let [[_ match] (re-find #"\\Q(.*)\\E" s)]
+              (single-character? match))
+            (re-find #"\\u[0-9a-zA-Z]{4}" s))
+        s)
 
       false)))
 
@@ -98,16 +158,16 @@
               (list rsg))]
     `^::grouped (~rsg ~q)))
 
-(defmethod -regal->ir :* [[_ & rs] opts]
+(defmethod -regal->ir [:* :common] [[_ & rs] opts]
   (quantifier->ir \* rs opts))
 
-(defmethod -regal->ir :+ [[_ & rs] opts]
+(defmethod -regal->ir [:+ :common] [[_ & rs] opts]
   (quantifier->ir \+ rs opts))
 
-(defmethod -regal->ir :? [[_ & rs] opts]
+(defmethod -regal->ir [:? :common] [[_ & rs] opts]
   (quantifier->ir \? rs opts))
 
-(defmethod -regal->ir :repeat [[_ r & ns] opts]
+(defmethod -regal->ir [:repeat :common] [[_ r & ns] opts]
   (quantifier->ir `^::grouped (\{ ~@(interpose \, (map str ns)) \}) [r] opts))
 
 (defn- compile-class [cs]
@@ -124,13 +184,13 @@
           []
           cs))
 
-(defmethod -regal->ir :class [[_ & cs] opts]
+(defmethod -regal->ir [:class :common] [[_ & cs] opts]
   `^::grouped (\[ ~@(compile-class cs) \]))
 
-(defmethod -regal->ir :not [[_ & cs] opts]
+(defmethod -regal->ir [:not :common] [[_ & cs] opts]
   `^::grouped (\[ \^ ~@(compile-class cs) \]))
 
-(defmethod -regal->ir :capture [[_ & rs] opts]
+(defmethod -regal->ir [:capture :common] [[_ & rs] opts]
   `^::grouped (\( ~@(regal->ir (into [:cat] rs) opts) \)))
 
 (defn- regal->ir
@@ -153,10 +213,10 @@
   [r {:keys [resolver] :as opts}]
   (cond
     (string? r)
-    (regex-escape r)
+    (escape r)
 
     (char? r)
-    (regex-escape (str r))
+    (escape (str r))
 
     (qualified-keyword? r)
     (if resolver
@@ -168,7 +228,7 @@
                       {::no-resolver-for r})))
 
     (simple-keyword? r)
-    (get tokens r)
+    (token->ir r)
 
     :else
     (let [g (-regal->ir r opts)]
@@ -188,7 +248,8 @@
         (str "(?:" s ")")))
 
     :else
-    (assert false g)))
+    (throw (ex-info (str "Unrecognized component: " g)
+                    {::unrecognized-component g}))))
 
 (defn- grouped->str [g]
   (apply str (map grouped->str* g)))
@@ -209,4 +270,4 @@
   ([r]
    (regex r nil))
   ([r {:keys [resolver] :as opts}]
-   (make-regex (compile-str r opts))))
+   (compile (compile-str r opts))))

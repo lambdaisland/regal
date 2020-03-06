@@ -12,15 +12,15 @@
 (defmethod -generator :alt [[_ & rs] opts]
   (gen/one-of (map #(generator % opts) rs)))
 
-(defmethod -generator :* [[_ r] opts]
+(defmethod -generator :* [[_ & rs] opts]
   (gen/bind gen/pos-int
             (fn [i]
-              (apply gen/tuple (repeat i (generator r opts))))))
+              (apply gen/tuple (repeat i (generator (into [:cat] rs) opts))))))
 
-(defmethod -generator :+ [[_ r] opts]
+(defmethod -generator :+ [[_ & rs] opts]
   (gen/bind gen/s-pos-int
             (fn [i]
-              (apply gen/tuple (repeat i (generator r opts))))))
+              (apply gen/tuple (repeat i (generator (into [:cat] rs) opts))))))
 
 (defmethod -generator :? [[_ & rs] opts]
   (gen/one-of [(gen/return "")
@@ -146,6 +146,25 @@
 
 (comment
   (sample [:cat :digit :whitespace :word])
+
+  (sample
+   [:cat
+    :start
+    [:alt "http" "https" "ftp"]
+    "://"
+    [:+ [:+ :word] "."]
+    [:+ :word]
+    [:? [:+ "/" [:+ [:not "/?#"]]]]
+    [:? "?" [:+ [:+ :word] "=" [:+ :word]]
+     [:? [:+  "&" [:+ :word] "=" [:+ :word]]]]])
+
+  (require '[lambdaisland.regal :as regal])
+  (sample [:cat
+           :start
+           [:+ :word]
+           "="
+           [:+ :digit]
+           :end])
 
   (let [pattern [:cat
                  :start

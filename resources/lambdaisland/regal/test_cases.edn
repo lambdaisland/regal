@@ -1,0 +1,93 @@
+;; Title: Regal Test Cases
+;; Author: Arne Brasseur
+;;
+;; Based on the comparison tables at http://www.regular-expressions.info, with
+;; additional research and resources used where necessary.
+;;
+;; Test cases consist of a regex pattern, a regal form, optionally a canonical
+;; regex pattern, and a sequence of input/match pairs.
+;;
+;; The regex pattern and regal form should round-trip, unless a canonical
+;; pattern is given. In that case the canonical pattern and regal form
+;; round-trip, and the conversion from the non-canonical pattern to the regex
+;; form is only one-way.
+;;
+;; Differences between regex flavors are marked with metadata tags
+;; Flavors:
+;; - :java
+;; - :ecma
+;;
+;; Subflavors
+;; - :java8 Java 1.8 or earlier
+;; - :java9 Java 9 or later
+;;
+[:character-literals
+ ;; Regex
+ ;; | Regal
+ ;; |  |  Input
+ ;; |  |    |  Match
+ ;; |  |    |   |
+ ["a" "a" ["a" "a"]]
+
+ :literal-curly-brace
+ ^:java ["\\{" "{" ["{" "{"]]
+ ^:ecma ["{" "{" "\\{" ["{" "{"]]
+
+ :backslack-escaped-metacharacter
+ ["\\$" "$" ["$" "$"]]
+ ["\\(" "(" ["(" "("]]
+ ["\\)" ")" [")" ")"]]
+ ["\\*" "*" ["*" "*"]]
+ ["\\*" "*" ["*" "*"]]
+ ["\\+" "+" ["+" "+"]]
+ ["\\." "." ["." "."]]
+ ["\\?" "?" ["?" "?"]]
+ ["\\[" "[" ["[" "["]]
+ ["\\]" "]" ["]" "]"]]
+ ["\\\\" "\\" ["\\" "\\"]]
+ ["\\^" "^" ["^" "^"]]
+ ["\\{" "{" ["{" "{"]]
+ ["\\|" "|" ["|" "|"]]
+ ["\\}" "}" ["}" "}"]]
+
+ :escape-sequence
+ ;; Regex       Regal  Canonical form
+ ;;  |           |      |
+ ^:java
+ ["\\Qa+-*/\\E" "a+-*/" "a\\+-\\*/"
+  ["cba+-*/" "a+-*/"]]
+
+ :hexadecimal-escape
+ ["\\x60" "u" "u"
+  ["u" "u"]]
+ ["\\x09" "\t" "\t"
+  ["\t" "\t"]]
+
+ :lf-cr-tab
+ ["\\n" :newline ["\n" "\n"]]
+ ["\\r" :return ["\r" "\r"]]
+ ["\\t" :tab ["\t" "\t"]]
+
+
+ :line-break
+ ["\\R" :line-break
+  ["\r" "\r"]
+  ["\n" "\n"]
+  ["\f" "\f"]
+  ["\r\n" "\r\n"]
+  ["\u000B" "\u000B"] ;; <LINE TABULATION> a.k.a. Vertical Tab (VT)
+  ["\u0085" "\u0085"] ;; <NEXT LINE> (NEL)
+  ["\u2028" "\u2028"] ;; <LINE SEPARATOR>
+  ["\u2029" "\u2029"]] ;; <PARAGRAPH SEPARATOR>
+
+ ^:java
+ ["\\R\\R" [:cat :line-break :line-break]
+  ["\r\r" "\r\r"]
+  ["\n\n" "\n\n"]
+  ["\f\f" "\f\f"]
+  ["\u000B\u0085" "\u000B\u0085"]
+  ;; https://bugs.openjdk.java.net/browse/JDK-8176029
+  ^:java ^:java8 ["\r\n" nil]     ;; no match, \r\n is "indivisible" w.r.t \R
+  ^:java ^:java9 ["\r\n" "\r\n"]] ;; Java 9 and later does match
+
+ ]

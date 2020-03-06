@@ -1,8 +1,10 @@
 (require '[lambdaisland.regal.spec-alpha :as regal-spec]
          '[lambdaisland.regal :as regal]
+         '[lambdaisland.regal.parse :as parse]
          '[clojure.test.check.generators]
          '[clojure.spec.gen.alpha :as gen]
-         '[clojure.spec.alpha :as s])
+         '[clojure.spec.alpha :as s]
+         '[instaparse.core :as instaparse])
 
 (->> "abc"
      #_remove-QE
@@ -31,7 +33,7 @@
   :PlainChar identity}
  (->> "ab\\x01"
       #_remove-QE
-      (instaparse/parse parser)
+      (instaparse/parse @parse/parser)
       )
 
  )

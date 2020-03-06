@@ -28,7 +28,13 @@
        (fn [size]
          gen/string)))))
 
-(s/def ::regal/token (set (keys (deref (var regal/tokens)))))
+(s/def ::regal/token (->> regal/token->ir
+                          methods
+                          keys
+                          (filter vector?)
+                          (map first)
+                          set))
+
 
 (defmulti op first)
 
@@ -105,3 +111,18 @@
         (partial re-find pattern)
         #(generator/gen regal opts))
       {::form regal})))
+
+(comment
+
+  (s/valid? :lambdaisland.regal/form [:cat [:+ "x"] "-" [:+ "y"]])
+  ;; => true
+
+  (s/conform :lambdaisland.regal/form [:cat [:+ "x"] "-" [:+ "y"]])
+  ;; => [:op
+  ;;     {:op :cat,
+  ;;      :args
+  ;;      [[:op {:op :+, :args [[:literal [:string "x"]]]}]
+  ;;       [:literal [:string "-"]]
+  ;;       [:op {:op :+, :args [[:literal [:string "y"]]]}]]}]
+
+  )

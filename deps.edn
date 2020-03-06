@@ -22,6 +22,9 @@
   :test-chuck
   {:extra-deps {com.gfredericks/test.chuck {:mvn/version "0.2.10"}}}
 
+  :malli
+  {:extra-deps {metosin/malli {:local/root "../../malli"}}}
+
   :cljs
   {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.597"}}}
 
