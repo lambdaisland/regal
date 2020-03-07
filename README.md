@@ -73,7 +73,7 @@ Here is an overview of how to get from one to the other.
 Forms consist of vectors, keywords, strings, character literals, and in some
 cases integers. For example:
 
-```
+``` clojure
 [:cat [:alt [:char 11] [:char 13]] \J [:rep "hello" 2 3]]
 ```
 
