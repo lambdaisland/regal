@@ -31,3 +31,12 @@
 ;; So if you use :line-break we emit a regex with the same semantics as \R
 (regal/with-flavor :ecma (regal/pattern :line-break))
 ;; => "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"
+
+;; Clojure
+(regal/regex :vertical-whitespace) ;;=> #"\v"
+
+;; ClojureScript
+(regal/regex :vertical-whitespace) ;;=> #"[\n\x0B\f\r\x85\u2028\u2029]"
+
+
+(regal/regex-pattern #"\u000B\v") ;; => "\\u000B\\v"

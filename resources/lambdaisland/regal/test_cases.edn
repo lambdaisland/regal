@@ -120,8 +120,51 @@
  [[:ctrl \A] "\\cA" ["\u0001" "\u0001"]]
  [[:ctrl \J] "\\cJ" ["\n" "\n"]]
 
+ :null
+ [:null {:java "\\x00" :ecma "\\0"}
+  ["\u0000" "\u0000"]
+  ["\u0001" nil]]
+
  ;; Not doing octal notation (e.g. \010). Most of them are only supported in
  ;; JavaScript, and there are plenty of other options to refer to specific
  ;; codepoints. May revisit when we start parsing in earnest to support full
  ;; round tripping.
+
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;; Basic features
+ ;; http://www.regular-expressions.info/refbasic.html
+
+ :dot
+ [:any "." ["x" "x"]]
+
+ :alternation
+ [[:alt "abc" "def" "xyz"] "abc|def|xyz"
+  ["abc" "abc"]
+  ["def" "def"]
+  ["abcd" "abc"]
+  ["bcd" nil]]
+ [[:alt "a" "ab"] "a|ab" ["ab" "a"]]
+ [[:alt "ab" "a"] "ab|a" ["ab" "ab"]]
+
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;; Character classes
+ ;; http://www.regular-expressions.info/refcharclass.html
+ :literal-character-class
+ [[:class "abc"] "[abc]" ["a" "a"] ["b" "b"] ["c" "c"] ["ab" "a"]]
+
+ :backslash-escaped-metacharacter
+ [[:class "^]"] "[\\^\\]]" ["^" "^"] ["]" "]"]]
+
+ :range
+ [[:class [\a \z] [\A \Z] [\0 \9]] "[a-zA-Z0-9]" ["a" "a"] ["Z" "Z"] ["5" "5"]]
+
+ :negated-bcc
+ [[:not [\a \d]] "[^a-d]" ["e" "e"] ["b" nil]]
+
+ :bcc-opening-bracket
+ [[:class "["] "[\\[]" ["[" "["]]
+
+ :bcc-escaped
+ ;; :intersection [base&&[intersect]] Java-only
+ [[:class :newline :return :tab] "[\\n\\r\\t]"]
  ]

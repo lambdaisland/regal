@@ -125,6 +125,17 @@ this pattern representation over the compiled regex object.
 - allow manipulating regex pattern of regex flavors other than the one supported
   by the current runtime
 
+Note that in Clojure the syntax available in regex patterns differs from the
+syntax available in strings, in particluar when it comes to notations starting
+with a backslash. e.g. `#"\xFF"` is a valid regex, while `"\xFF"` is not a valid
+string. We encode regex patterns in strings, which practically speaking means
+that backslashes are escaped (doubled).
+
+``` clojure
+(regal/regex-pattern #"\xFF") ;;=> "\\xFF"
+(regal/compile "\\xFF")       ;;=> #"\xFF"
+```
+
 ### Regex
 
 To use the regex engine provided by the runtime (e.g. through `re-find` or

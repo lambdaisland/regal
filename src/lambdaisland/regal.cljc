@@ -130,6 +130,9 @@
 (defmethod token->ir [:vertical-tab :java] [_] "\\x0B")
 (defmethod token->ir [:vertical-tab :ecma] [_] "\\v")
 
+(defmethod token->ir [:null :java] [_] "\\x00")
+(defmethod token->ir [:null :ecma] [_] "\\0")
+
 (declare regal->ir)
 
 (defmulti -regal->ir (fn [[op] opts] [op *flavor*]) :hierarchy #'flavor-hierarchy)
@@ -191,17 +194,35 @@
 (defmethod -regal->ir [:repeat :common] [[_ r & ns] opts]
   (quantifier->ir `^::grouped (\{ ~@(interpose \, (map str ns)) \}) [r] opts))
 
+(defn char-class-escape [ch]
+  (case ch
+    \^
+    "\\^"
+    \]
+    "\\]"
+    ;; unescaped opening brackets are in fact allowed inside character classes.
+    ;; In JavaScript this allows nesting, in Java it matches a literal opening
+    ;; bracket. Escaped it works the same on both.
+    \[
+    "\\["
+    \\
+    "\\\\"
+    ch))
+
 (defn- compile-class [cs]
   (reduce (fn [r c]
             (cond
               (string? c)
-              (conj r c)
+              (into r (map char-class-escape) c)
 
               (char? c)
-              (conj r c)
+              (conj r (char-class-escape c))
 
               (vector? c)
-              (conj r (first c) \- (second c))))
+              (conj r (first c) \- (second c))
+
+              (keyword? c)
+              (conj r (token->ir c))))
           []
           cs))
 
@@ -328,3 +349,12 @@
    (regex form nil))
   ([form {:keys [resolver] :as opts}]
    (compile (pattern form opts))))
+
+
+
+(comment
+
+  (with-flavor :ecma
+    (pattern [:class :line-break "xyz"])
+    )
+  )

@@ -3,7 +3,8 @@
             [lambdaisland.regal.generator :as generator]
             [clojure.test.check.generators :as gen]
             [clojure.spec.alpha :as s]
-            [clojure.spec.gen.alpha :as spec-gen]))
+            [clojure.spec.gen.alpha :as spec-gen]
+            [clojure.string :as str]))
 
 ;; (s/fdef regal/regex :args (s/cat :form ::regal/form
 ;;                                  :options (s/o)))
@@ -34,7 +35,6 @@
                           (filter vector?)
                           (map first)
                           set))
-
 
 (defmulti op first)
 
@@ -90,15 +90,25 @@
                   (into [form] (sort minmax)))
                 (gen/tuple form-gen gen/nat gen/nat)))))
 
+(s/def ::single-character
+  (s/or :char char?
+        :string (s/and string? #(= (count %) 1))))
+
 (s/def ::regal/class
   (s/+ (s/or :char   char?
-             :string ::non-blank-string)))
+             :range  (s/cat :from ::single-character
+                            :to ::single-character)
+             :string ::non-blank-string
+             :token  ::regal/token)))
 
 (defmethod op :class [_]
   (op-spec ::regal/class))
 
 (defmethod op :not [_]
   (op-spec ::regal/class))
+
+(defmethod op :ctrl [_]
+  (op-spec (s/cat :char char?)))
 
 (defn- resolver [kw]
   (-> kw s/spec meta ::form))

@@ -4,7 +4,8 @@
             [lambdaisland.regal.test-util :as test-util]
             [lambdaisland.regal.parse :as parse]
             [clojure.spec.test.alpha :as stest]
-            [clojure.test :refer [deftest testing is are]]))
+            [clojure.test :refer [deftest testing is are]]
+            [clojure.spec.alpha :as s]))
 
 (stest/instrument `regal/regex)
 
@@ -79,6 +80,9 @@
 (deftest data-based-tests
   (doseq [{:keys [id cases]} (test-util/test-cases)
           {:keys [form pattern equivalent tests]} cases]
+
+    (is (s/valid? ::regal/form form))
+
     (doseq [flavor [:java8 :java9 :ecma]
             :let [pattern (if (map? pattern)
                             (some pattern (test-util/flavor-parents flavor))

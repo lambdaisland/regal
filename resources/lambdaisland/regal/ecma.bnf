@@ -1,0 +1,111 @@
+(** Original version by Gary Fredericks **)
+(** https://github.com/gfredericks/test.chuck/blob/57dc937f42dc5d4348ecc29782df5a5385d5e529/resources/com/gfredericks/test/chuck/regex.bnf **)
+(** Modified for lambdaisland/regal **)
+(** This file is licensed under the Eclipse Public License, version 1.0 **)
+
+Regex = Alternation
+
+Alternation = Concatenation (<'|'> Concatenation) *
+
+Concatenation = DanglingCurlyRepetitions (SuffixedExpr | <'('> MutatingMatchFlags <')'> DanglingCurlyRepetitions) *
+
+DanglingCurlyRepetitions = (CurlyRepetition Quantifier ?) *
+
+SuffixedExpr = SingleExpr Suffix ?
+SingleExpr = BaseExpr | ParenthesizedExpr
+ParenthesizedExpr = <'('> GroupFlags ? Alternation <')'>
+Suffix = (Optional | Positive | NonNegative | CurlyRepetition ) Quantifier ? DanglingCurlyRepetitions
+Optional = <'?'>
+Positive = <'+'>
+NonNegative = <'*'>
+CurlyRepetition = <'{'> #"\d+" (',' #"\d+" ?) ? <'}'>
+Quantifier = '?' | '+'
+BaseExpr = CharExpr | LiteralChar | LinebreakMatcher | Anchor | BackReference
+LinebreakMatcher = '\\R'
+Anchor = '^' | '$' | '\\' #"[bBAGZz]"
+LiteralChar = PlainChar | EscapedChar
+
+(* this will be hard -- will require counting in the analyzer to figure
+   out where the number stops and numberic literals begin *)
+BackReference = <'\\'> #"[1-9][0-9]*"
+
+PlainChar = #"[^.|\\+*$^\[(){?]"
+CharExpr = Dot | SpecialCharClass | UnicodeCharacterClass | BCC
+Dot = '.'
+
+(** BRACKETED CHARACTER CLASSES (AKA BCC) **)
+(** (which are more complicated than you thought they were) **)
+
+
+BCC = <'['> <'&&'> ? BCCIntersection <#"&{2,}"> ? <']'>
+BCCIntersection =  BCCUnionLeft (<#"&{2,}"> BCCUnionNonLeft ) *
+BCCUnionLeft = (BCCNegation BCCElemHardLeft | !'^' BCCElemHardLeft) BCCElemNonLeft *
+BCCUnionNonLeft = BCCElemLeft BCCElemNonLeft *
+BCCNegation = '^'
+
+(* The optional '&&' here cover some quirky NOOP edge cases *)
+BCCElemHardLeft = !'&&&' '&&' ? BCCElemBase | (']' ! ('-' BCCRangeRightable)) | BCCRangeWithBracket
+BCCElemLeft = BCCElemBase
+BCCElemNonLeft = BCCElemBase
+
+
+BCCElemBase = BCCCharNonRange | SpecialCharClass | UnicodeCharacterClass | BCCRange | BCC
+BCCRangeRightable = BCCCharEndRange | SpecialCharClass | UnicodeCharacterClass | '&'
+BCCRange = BCCChar <'-'> BCCCharEndRange
+BCCRangeWithBracket = <']-'> BCCCharEndRange
+BCCCharNonRange = BCCChar ! ('-' BCCRangeRightable)
+BCCChar = BCCPlainChar | EscapedChar | (BCCPlainAmpersand ! '&')
+BCCCharEndRange = BCCPlainChar | EscapedChar | BCCPlainAmpersand
+BCCPlainAmpersand = '&'
+BCCPlainChar = #"[^\]\[&\\]"
+(* only match an odd number of ampersands whatever *)
+(* This is problematic because re-pattern won't take repeated ampersands in the HardLeft position *)
+BCCDash = '-'
+
+
+(** BASE CHARACTER STUFFS **)
+
+EscapedChar = Null | OctalChar | HexChar | BasicEscapedChar | NormalSlashedCharacters | ControlChar | NamedChar
+Null = <'\\0'>
+OctalChar = <'\\0'> (OctalDigits1 | OctalDigits2 | OctalDigits3)
+OctalDigits1 = #"[0-7]" ! #"[0-7]"
+OctalDigits2 = (#"[0-3][0-7]" ! #"[0-7]") | #"[4-7][0-7]"
+OctalDigits3 = #"[0-3][0-7]{2}"
+HexChar = ShortHexChar | MediumHexChar | LongHexChar
+ShortHexChar = <'\\x'> #'[0-9a-fA-F]{2}'
+MediumHexChar = <'\\u'> #'[0-9a-fA-F]{4}'
+LongHexChar = <'\\x{'> #'[0-9a-fA-F]+' <'}'>
+BasicEscapedChar = <'\\'> #"[^a-zA-Z0-9]"
+NamedChar = <'\\N{'> #'[-A-Z0-9\(\) ]+' <'}'>
+
+(* probably missing something here *)
+SpecialCharClass = <'\\'> #"[wWsSdDhHvVX]"
+(* Gotta figure out what these mean *)
+UnicodeCharacterClass = <'\\'> #'[pP]' (#"[CLMNPSZ]" | #"\{[a-zA-Z]+\}")
+
+NormalSlashedCharacters = #"\\[tnrfae]"
+
+(* why did I think you could have a backslashed character here?? *)
+ControlChar = <'\\c'> #"(?s)."
+
+(** FLAGS **)
+GroupFlags = NamedCapturingGroup
+           | NonCapturingMatchFlags
+           | PositiveLookAheadFlag
+           | NegativeLookAheadFlag
+           | PositiveLookBehindFlag
+           | NegativeLookBehindFlag
+           | IndependentNonCapturingFlag
+
+NamedCapturingGroup = <'?<'> GroupName <'>'>
+MutatingMatchFlags = <'?'> MatchFlagsExpr & ')'
+NonCapturingMatchFlags = <'?'> !')' MatchFlagsExpr <':'>
+PositiveLookAheadFlag = <'?='>
+NegativeLookAheadFlag = <'?!'>
+PositiveLookBehindFlag = <'?<='>
+NegativeLookBehindFlag = <'?<!'>
+IndependentNonCapturingFlag = <'?>'>
+(* the java 7 docs don't include 'c' here but openjdk accepts it for CANON_EQ *)
+MatchFlagsExpr = #"[idmsuxcU]" * ('-' #"[idmsuxcU]" *) ?
+
+GroupName = #"[a-zA-Z][a-zA-Z0-9]*"

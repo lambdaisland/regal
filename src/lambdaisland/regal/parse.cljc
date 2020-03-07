@@ -11,11 +11,23 @@
    (defmacro inline-resource [path]
      (slurp (io/resource path))))
 
-(def grammar
-  #?(:clj (io/resource "lambdaisland/regal/regex.bnf")
-     :cljs (inline-resource "lambdaisland/regal/regex.bnf")))
+(def java-grammar
+  #?(:clj (io/resource "lambdaisland/regal/java.bnf")
+     :cljs (inline-resource "lambdaisland/regal/java.bnf")))
 
-(def parser (delay (instaparse/parser grammar)))
+(def ecma-grammar
+  #?(:clj (io/resource "lambdaisland/regal/ecma.bnf")
+     :cljs (inline-resource "lambdaisland/regal/ecma.bnf")))
+
+(def parser*
+  (memoize
+   (fn [flavor]
+     (cond
+       (isa? regal/flavor-hierarchy flavor :java) (instaparse/parser java-grammar)
+       (isa? regal/flavor-hierarchy flavor :ecma) (instaparse/parser ecma-grammar)))))
+
+(defn parser []
+  (parser* regal/*flavor*))
 
 (defn ^:private remove-QE
   "Preprocesses a regex string (the same way that openjdk does) by
@@ -99,6 +111,7 @@
 (defmethod transform [:HexChar :common] [[_ f]] (transform f))
 (defmethod transform [:BasicEscapedChar :common] [[_ f]] (transform f))
 (defmethod transform [:CharExpr :common] [[_ x]] (transform x))
+(defmethod transform [:Dot :common] [[_ x]] :any)
 
 (defmethod transform [:DanglingCurlyRepetitions :common] [[_ & reps]])
 
@@ -133,15 +146,6 @@
     [:negative-lookahead [:cat :return :newline]]
     [:class [:newline :return] [:char 133] [:char 8232] [:char 8233]]]])
 
-[:alt
- [:cat :return :newline]
- [:cat
-  [:negative-lookahead [:cat :return :newline]]
-  [:class
-   [:newline :return]
-   [:lambdaisland.regal.parse/not-implemented [:ShortHexChar "85"]]
-   [:char 8232]
-   [:char 8233]]]]
 (defmethod transform [:Alternation :common] [[_ & alts]]
   (let [alts (map transform alts)]
     (if (= (count alts) 1)
@@ -150,7 +154,7 @@
         (if (and (contains? #{:java9 :ecma} regal/*flavor*)
                  (= result line-break-equivalent))
           :line-break
-          [regal/*flavor* (= result line-break-equivalent) result])))))
+          result)))))
 
 (defmethod transform [:Concatenation :common] [[_ & cats]]
   (let [cats (sequence (comp (map transform) (remove nil?) collapse-strings-xf) cats)]
@@ -204,6 +208,8 @@
 
 (defmethod transform [:ShortHexChar :java] [[_ x]]
   (case x
+    "00"
+    :null
     "0B"
     :vertical-tab
     [:char (platform/hex->int x)]))
@@ -215,6 +221,9 @@
     "1B"
     :escape
     [:char (platform/hex->int x)]))
+
+(defmethod transform [:Null :ecma] [_]
+  :null)
 
 (defmethod transform [:MediumHexChar :common] [[_ x]] [:char (platform/hex->int x)])
 
@@ -244,7 +253,10 @@
 (defmethod transform [:BCCChar :common] [[_ x]] (transform x))
 (defmethod transform [:BCCPlainChar :common] [[_ x]] (transform x))
 (defmethod transform [:BCCRange :common] [[_ x y]]
-  [(transform x) (transform y)])
+  (let [from (transform x)
+        to   (transform y)]
+    [(if (string? from) (first from) from)
+     (if (string? to) (first to) to)]))
 
 (defmethod transform [:GroupFlags :common] [[_ g :as x]]
   (case (first g)
@@ -273,7 +285,7 @@
 (defn parse-pattern [pattern]
   (->> pattern
        remove-QE
-       (instaparse/parse @parser)
+       (instaparse/parse (parser))
        transform))
 
 (defn parse [regex]
@@ -301,16 +313,19 @@
       [form (parse pattern)])
     )
 
-  (instaparse/parse @parser "a")
+  (instaparse/parse (parser) "a")
 
   (run! regal/regex )
   (prn (s/gen :lambdaisland.regal/form))
 
   (regal/regex [:cat "abc"])
-  (instaparse/parse @parser "(?!x)")
+  (instaparse/parse (parser) "(?!x)")
 
   (parse "\\u000D\\u000A|[\\u000A\\u000B\\u000C\\u000D\\u0085\\u2028\\u2029]")
 
+  (regal/with-flavor :ecma
+    (instaparse/parse (parser) "(?!x)"))
 
+  (time (parser))
 
   )
