@@ -11,7 +11,8 @@
                  :end])
      #\"\\A[a-zA-Z0-9_-]\\Q@\\E[0-9]{3,5}[^.]*(?:\\Qcom\\E|\\Qorg\\E|\\Qnet\\E)\\z\" "
   (:refer-clojure :exclude [compile])
-  (:require [clojure.string :as str])
+  (:require [clojure.string :as str]
+            [lambdaisland.regal.platform :as platform])
   #?(:clj (:import java.util.regex.Pattern)
      :cljs (:require-macros [lambdaisland.regal :refer [with-flavor]])))
 
@@ -213,10 +214,22 @@
 (defmethod -regal->ir [:capture :common] [[_ & rs] opts]
   `^::grouped (\( ~@(regal->ir (into [:cat] rs) opts) \)))
 
+(defn left-pad [s len pad]
+  (with-meta
+    (concat (repeat (- len (count s)) pad)
+            s)
+    {::grouped true}))
+
+(defmethod -regal->ir [:char :common] [[_ ch] opts]
+  {:pre [(int? ch)]}
+  (if (< ch 256)
+    `^::grouped (\\ \x ~(left-pad (platform/int->hex ch) 2 \0))
+    `^::grouped (\\ \u ~(left-pad (platform/int->hex ch) 4 \0))))
+
 (defmethod -regal->ir [:ctrl :common] [[_ ch] opts]
   (let [ch (if (string? ch) (first ch) ch)]
     (assert (<= (long \A) (long ch) (long \Z)))
-    (list \\ \c ch)))
+    `^::grouped (\\ \c ~ch)))
 
 (defn- regal->ir
   "Convert a Regal expression into an intermediate representation,
