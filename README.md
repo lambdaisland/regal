@@ -62,7 +62,7 @@ Regal can convert between three different represenations for regular
 expressions, Regal **forms**, **patterns**(i.e. strings), and **regex** objects.
 Here is an overview of how to get from one to the other.
 
-| ↓ From / To → | Form                                   | Pattern                          | Regex                      |
+| ↓From / To→ | Form                                   | Pattern                          | Regex                      |
 |---------------|----------------------------------------|----------------------------------|----------------------------|
 | Form          | identity                               | lambdaisland.regal/pattern       | lambdaisland.regal/regex   |
 | Pattern       | lambdaisland.regal.parse/parse-pattern | identity                         | lambdaisland.regal/compile |
