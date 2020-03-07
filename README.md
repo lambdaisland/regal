@@ -9,13 +9,18 @@ _Royally reified regular expressions_
 Regal provides a syntax for writing regular expressions using plain Clojure
 data: vectors, keywords, strings. This is known as Regal notation.
 
-Once you have a Regal form you can either compile it to a regex pattern
+Once you have a Regal form you can either compile it to a regex object
 (`java.util.regex.Pattern` or JavaScript `RegExp`), or you can use it to create
 a Generator (see [test.check](https://github.com/clojure/test.check)) for
 generating values that conform to the given pattern.
 
-Regal is Clojure and ClojureScript compatible, and glosses over some of the
-differences in Java and JavaScript regex syntax (like `\A` / `\z` vs `^` / `$`).
+It is also possible to parse regular expression patterns back to Regal forms.
+
+Regal is Clojure and ClojureScript compatible, and has fixed semantics across
+platforms. Write your forms once and run them anywhere! It also allows
+manipulating multiple regex flavors regardless of the current platform, so you
+can do things like converting a JavaScript regex pattern to one that is suitable
+for Java's regex engine.
 
 <!-- opencollective -->
 ### Support Lambda Island Open Source
@@ -50,6 +55,81 @@ If you find value in our work please consider [becoming a backer on Open Collect
 (regal-gen/sample r)
 ;;=> ("t=" "d=5Ë" "zja=·" "uatt=ß¾" "lqyk=É" "xkj=q\f" "gxupw=æ" "pkadbgmc=¯²" "f=ÃJ" "d=ç")
 ```
+
+### A swiss army knife
+
+Regal can convert between three different represenations for regular
+expressions, Regal **forms**, **patterns**(i.e. strings), and **regex** objects.
+Here is an overview of how to get from one to the other.
+
+| ↓ From / To → | Form                                   | Pattern                          | Regex                      |
+|---------------|----------------------------------------|----------------------------------|----------------------------|
+| Form          | identity                               | lambdaisland.regal/pattern       | lambdaisland.regal/regex   |
+| Pattern       | lambdaisland.regal.parse/parse-pattern | identity                         | lambdaisland.regal/compile |
+| Regex         | lambdaisland.regal.parse/parse         | lambdaisland.regal/regex-pattern | identity                   |
+
+### Regal forms
+
+Forms consist of vectors, keywords, strings, character literals, and in some
+cases integers. For example:
+
+```
+[:cat [:alt [:char 11] [:char 13]] \J [:rep "hello" 2 3]]
+```
+
+Forms have platform-independent semantics. The same regal form will match the
+same strings both in Clojure and ClojureScript, even though Java and JavaScript
+(and even different versions of Java or JavaScript) have different regex
+"flavors". In other words, we generate the regex that is right for the target
+platform.
+
+``` clojure
+;; Clojure
+(regal/regex :vertical-whitespace) ;;=> #"\v"
+
+;; ClojureScript
+(regal/regex :vertical-whitespace) ;;=> #"[\n\x0B\f\r\x85\u2028\u2029]"
+```
+
+Regal currently knows about three "flavors"
+
+- `:java8` Java 1.8 (earlier versions are not supported)
+- `:java9` Java 9 or later
+- `:ecma` ECMAScript (JavaScript)
+
+By default it takes the flavor that is best suited for the platform, but you can override that with `lambdaisland.regal/with-flavor`
+
+``` clojure
+(regal/with-flavor :ecma
+  (regal/pattern ...))
+```
+
+Note that using `regal/regex` with a flavor that does not correspond with the
+flavor of the platform may yield unexpected results, when dealing with "foreign"
+regex flavors always stick to string representations (i.e. **patterns**).
+
+### Pattern
+
+The second regex representation regal knows about is the **pattern**, i.e. the
+regex pattern in string form.
+
+``` clojure
+(regal/regex-pattern #"\u000B\v") ;; => "\\u000B\\v"
+```
+
+Depending on the situation there are several reasons why you might want to use
+this pattern representation over the compiled regex object.
+
+- simple strings, so easy to (de-)serialize
+- value semantics (can be compared)
+- allow manipulating regex pattern of regex flavors other than the one supported
+  by the current runtime
+
+### Regex
+
+To use the regex engine provided by the runtime (e.g. through `re-find` or
+`re-seq`) you need a platform-specific regex object. This is what
+`lambdaisland.regal/regex` gives you.
 
 ### Grammar
 

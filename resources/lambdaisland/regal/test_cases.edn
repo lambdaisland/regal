@@ -118,7 +118,7 @@
 
  :control
  [[:ctrl \A] "\\cA" ["\u0001" "\u0001"]]
- [[:ctrl "J"] "\\cJ" ["\n" "\n"]]
+ [[:ctrl \J] "\\cJ" ["\n" "\n"]]
 
  ;; Not doing octal notation (e.g. \010). Most of them are only supported in
  ;; JavaScript, and there are plenty of other options to refer to specific

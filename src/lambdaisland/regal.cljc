@@ -55,7 +55,7 @@
   ;; in clj vs cljs, this may be a ClojureScript bug
   (str/replace s #"([.*+?^${}()|\[\]\\])" #?(:clj "\\\\$1" :cljs "\\$1")))
 
-(defn pattern
+(defn regex-pattern
   "Regex to string, remove the slashes that JavaScript likes to add. This will
   drop any regex modifiers."
   [r]
@@ -214,6 +214,21 @@
 (defmethod -regal->ir [:capture :common] [[_ & rs] opts]
   `^::grouped (\( ~@(regal->ir (into [:cat] rs) opts) \)))
 
+(defmethod -regal->ir [:lookahead :common] [[_ & rs] opts]
+  `^::grouped (\( \? \= ~@(regal->ir (into [:cat] rs) opts) \)))
+
+(defmethod -regal->ir [:negative-lookahead :common] [[_ & rs] opts]
+  `^::grouped (\( \? \! ~@(regal->ir (into [:cat] rs) opts) \)))
+
+(defmethod -regal->ir [:lookbehind :common] [[_ & rs] opts]
+  `^::grouped (\( \? \< \= ~@(regal->ir (into [:cat] rs) opts) \)))
+
+(defmethod -regal->ir [:negative-lookbehind :common] [[_ & rs] opts]
+  `^::grouped (\( \? \< \! ~@(regal->ir (into [:cat] rs) opts) \)))
+
+(defmethod -regal->ir [:atomic :common] [[_ & rs] opts]
+  `^::grouped (\( \? \> ~@(regal->ir (into [:cat] rs) opts) \)))
+
 (defn left-pad [s len pad]
   (with-meta
     (concat (repeat (- len (count s)) pad)
@@ -292,20 +307,24 @@
 (defn- grouped->str [g]
   (apply str (map grouped->str* g)))
 
-(defn- compile-str [r opts]
-  (-> r
-      (regal->ir opts)
-      grouped->str))
+(defn pattern
+  "Convert a Regal form to a regex pattern as a string."
+  ([form]
+   (pattern form nil))
+  ([form opts]
+   (-> form
+       (regal->ir opts)
+       grouped->str)))
 
 (defn regex
-  "Convert a Regal Expression into a platform-specific regex pattern object.
+  "Convert a Regal form into a platform-specific regex pattern object.
 
   Can take an options map:
 
   - `:resolver` a function/map used to resolve namespaced keywords inside Regal
   expressions.
   "
-  ([r]
-   (regex r nil))
-  ([r {:keys [resolver] :as opts}]
-   (compile (compile-str r opts))))
+  ([form]
+   (regex form nil))
+  ([form {:keys [resolver] :as opts}]
+   (compile (pattern form opts))))

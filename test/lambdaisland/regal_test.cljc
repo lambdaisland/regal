@@ -2,6 +2,7 @@
   (:require [lambdaisland.regal :as regal]
             [lambdaisland.regal.spec-alpha]
             [lambdaisland.regal.test-util :as test-util]
+            [lambdaisland.regal.parse :as parse]
             [clojure.spec.test.alpha :as stest]
             [clojure.test :refer [deftest testing is are]]))
 
@@ -9,54 +10,54 @@
 
 (deftest regex-test
   (is (= "abc"
-         (regal/pattern (regal/regex [:cat "a" "b" "c"]))))
+         (regal/pattern [:cat "a" "b" "c"])))
 
   (is (= "a|b|c"
-         (regal/pattern (regal/regex [:alt "a" "b" "c"]))))
+         (regal/pattern [:alt "a" "b" "c"])))
 
   (is (= "a*"
-         (regal/pattern (regal/regex [:* "a"]))))
+         (regal/pattern [:* "a"])))
 
   (is (= "(?:ab)*"
-         (regal/pattern (regal/regex [:* "ab"]))))
+         (regal/pattern [:* "ab"])))
 
   (is (= "(?:ab)*"
-         (regal/pattern (regal/regex [:* "a" "b"]))))
+         (regal/pattern [:* "a" "b"])))
 
   (is (= "(?:a|b)*"
-         (regal/pattern (regal/regex [:* [:alt "a" "b"]]))))
+         (regal/pattern [:* [:alt "a" "b"]])))
 
   (is (= "a+"
-         (regal/pattern (regal/regex [:+ "a"]))))
+         (regal/pattern [:+ "a"])))
 
   (is (= "a?"
-         (regal/pattern (regal/regex [:? "a"]))))
+         (regal/pattern [:? "a"])))
 
   (is (= "[a-z0-9_-]"
-         (regal/pattern (regal/regex [:class [\a \z] [\0 \9] \_ \-]))))
+         (regal/pattern [:class [\a \z] [\0 \9] \_ \-])))
 
   (is (= "[^a-z0-9_-]"
-         (regal/pattern (regal/regex [:not [\a \z] [\0 \9] \_ \-]))))
+         (regal/pattern [:not [\a \z] [\0 \9] \_ \-])))
 
   (is (= "a{3,5}"
-         (regal/pattern (regal/regex [:repeat \a 3 5]))))
+         (regal/pattern [:repeat \a 3 5])))
 
   (regal/with-flavor :ecma
     (is (= "^a$"
-           (regal/pattern (regal/regex [:cat :start \a :end])))))
+           (regal/pattern [:cat :start \a :end]))))
 
   (regal/with-flavor :java
     (is (= "\\Aa\\z"
-           (regal/pattern (regal/regex [:cat :start \a :end])))))
+           (regal/pattern [:cat :start \a :end]))))
 
   (is (= "a(?:b|c)"
-         (regal/pattern (regal/regex [:cat "a" [:alt "b" "c"]]))))
+         (regal/pattern [:cat "a" [:alt "b" "c"]])))
 
   (is (= "(abc)"
-         (regal/pattern (regal/regex [:capture "abc"]))))
+         (regal/pattern [:capture "abc"])))
 
   (is (= "a(b|c)"
-         (regal/pattern (regal/regex [:cat "a" [:capture [:alt "b" "c"]]])))))
+         (regal/pattern [:cat "a" [:capture [:alt "b" "c"]]]))))
 
 (deftest escape-test
   (are [in out] (= out (regal/escape in))
@@ -84,7 +85,11 @@
                             pattern)]]
       (testing (str "Generated pattern is correct (" (name id) ") " (pr-str form) " (" flavor ")")
         (regal/with-flavor flavor
-          (is (= pattern (regal/pattern (regal/regex form)))))))
+          (is (= pattern (regal/pattern form)))))
+
+      (testing (str "Pattern parses correctly (" (name id) ") " (pr-str pattern) " (" flavor ")")
+        (regal/with-flavor flavor
+          (is (= form (parse/parse-pattern pattern))))))
 
     (doseq [[input match] tests]
       (testing (str "Test case " (pr-str form) " matches " (pr-str input))

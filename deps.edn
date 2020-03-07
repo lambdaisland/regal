@@ -1,5 +1,6 @@
 {:paths ["src" "test" "resources"]
- :deps  {org.clojure/clojure {:mvn/version "1.10.1"}}
+ :deps  {org.clojure/clojure {:mvn/version "1.10.1"}
+         instaparse {:mvn/version "1.4.10"}}
 
  :aliases
  {:dev
@@ -14,7 +15,7 @@
                                          :sha     "de38650874c6f0bc19e7755feab4d65b3fffb268"}}}
 
   :instaparse
-  {:extra-deps {instaparse {:mvn/version "1.4.10"}}}
+  {:extra-deps {}}
 
   :test-check
   {:extra-deps {org.clojure/test.check {:mvn/version "0.10.0"}}}

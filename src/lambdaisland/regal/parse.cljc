@@ -2,7 +2,8 @@
   (:require [instaparse.core :as instaparse]
             #?(:clj [clojure.java.io :as io])
             [lambdaisland.regal :as regal]
-            [lambdaisland.regal.platform :as platform])
+            [lambdaisland.regal.platform :as platform]
+            [clojure.string :as str])
   #?(:cljs
      (:require-macros [lambdaisland.regal.parse :refer [inline-resource]])))
 
@@ -22,7 +23,7 @@
   an equivalent regex that contains no \\Q...\\E expressions."
   {:author "Gary Fredericks"}
   [^String s]
-  (if (.contains s "\\Q")
+  (if (str/includes? s "\\Q")
     (letfn [(remove-QE-not-quoting [chars]
               (lazy-seq
                (when-let [[c1 & [c2 :as cs]] (seq chars)]
@@ -84,7 +85,11 @@
   :hierarchy #'regal/flavor-hierarchy)
 
 (defmethod transform [:string :common] [s] s)
-(defmethod transform :default [t] [::not-implemented t])
+(defmethod transform :default [t]
+  (if (map? t)
+    {::parse-error t}
+    [::not-implemented t]))
+
 (defmethod transform [:Regex :common] [[_ f]] (transform f))
 (defmethod transform [:SingleExpr :common] [[_ f]] (transform f))
 (defmethod transform [:BaseExpr :common] [[_ f]] (transform f))
@@ -119,11 +124,33 @@
   (throw (ex-info "Line break character \\R is not supported in ECMAScript regular expressions."
                   {::not-supported {:flavor :ecma :feature :line-break :pattern "\\R"}})))
 
+(def line-break-equivalent
+  "For :java9 and :ecma we simulate \\R when generating patterns, when parsing we
+  want to round trip, so we detect this specific form."
+  [:alt
+   [:cat :return :newline]
+   [:cat
+    [:negative-lookahead [:cat :return :newline]]
+    [:class [:newline :return] [:char 133] [:char 8232] [:char 8233]]]])
+
+[:alt
+ [:cat :return :newline]
+ [:cat
+  [:negative-lookahead [:cat :return :newline]]
+  [:class
+   [:newline :return]
+   [:lambdaisland.regal.parse/not-implemented [:ShortHexChar "85"]]
+   [:char 8232]
+   [:char 8233]]]]
 (defmethod transform [:Alternation :common] [[_ & alts]]
   (let [alts (map transform alts)]
     (if (= (count alts) 1)
       (first alts)
-      (into [:alt] (remove nil?) alts))))
+      (let [result (into [:alt] (remove nil?) alts)]
+        (if (and (contains? #{:java9 :ecma} regal/*flavor*)
+                 (= result line-break-equivalent))
+          :line-break
+          [regal/*flavor* (= result line-break-equivalent) result])))))
 
 (defmethod transform [:Concatenation :common] [[_ & cats]]
   (let [cats (sequence (comp (map transform) (remove nil?) collapse-strings-xf) cats)]
@@ -132,15 +159,15 @@
       1 (first cats)
       (into [:cat] cats))))
 
-(defmethod transform [:SuffixedExpr :common] [[_ expr suffix]]
+(defmethod transform [:SuffixedExpr :common] [[_ expr suffix :as x]]
   (if suffix
-    (throw (ex-info "" {::not-implemented [:SuffixedExpr expr suffix]}))
+    [::not-implemented x]
     (transform expr)))
 
 (defmethod transform [:ControlChar :common] [[_ [ch]]]
   [:ctrl ch])
 
-(defmethod transform [:NormalSlashedCharacters :common] [[_ [_ ch]]]
+(defn transform-normal-slached-characters [[_ [_ ch] :as x]]
   (case ch
     \n
     :newline
@@ -149,26 +176,65 @@
     \t
     :tab
     \f
-    :form-feed))
+    :form-feed
+    [::not-implemented x]))
 
-(defmethod transform [:NormalSlashedCharacters :java] [[_ [_ ch] :as exp]]
+(defmethod transform [:NormalSlashedCharacters :common] [x]
+  (transform-normal-slached-characters x))
+
+(defmethod transform [:NormalSlashedCharacters :java] [[_ [_ ch] :as x]]
   (case ch
     \a
     :alert
     \e
     :escape
-    (regal/with-flavor :common (transform exp))))
+    (transform-normal-slached-characters x)))
 
-(defmethod transform [:ShortHexChar :common] [[_ x]] [:char (platform/hex->int x)])
+(defmethod transform [:SpecialCharClass :java] [[_ [ch] :as x]]
+  (case ch
+    \v
+    :vertical-whitespace
+    [::not-implemented x]))
+
+(defmethod transform [:SpecialCharClass :ecma] [[_ [ch] :as x]]
+  (case ch
+    \v
+    :vertical-tab
+    [::not-implemented (pr-str ch) x]))
+
+(defmethod transform [:ShortHexChar :java] [[_ x]]
+  (case x
+    "0B"
+    :vertical-tab
+    [:char (platform/hex->int x)]))
+
+(defmethod transform [:ShortHexChar :ecma] [[_ x]]
+  (case x
+    "07"
+    :alert
+    "1B"
+    :escape
+    [:char (platform/hex->int x)]))
+
 (defmethod transform [:MediumHexChar :common] [[_ x]] [:char (platform/hex->int x)])
 
 ;; Character classes, there's a lot to unpack
 (defmethod transform [:BCC :common] [[_ x]] (transform x))
 (defmethod transform [:BCCIntersection :common] [[_ x]] (transform x))
-(defmethod transform [:BCCUnionLeft :common] [[_ & xs]]
+
+(defn tranform-bcc-union-left  [[_ & xs]]
   (if (= (ffirst xs) :BCCNegation)
     (into [:not] (comp (map transform) collapse-strings-xf) (next xs))
     (into [:class] (comp (map transform) collapse-strings-xf) xs)))
+
+(defmethod transform [:BCCUnionLeft :common] [x]
+  (tranform-bcc-union-left x))
+
+(defmethod transform [:BCCUnionLeft :ecma] [x]
+  (let [result (tranform-bcc-union-left x)]
+    (if (= result [:class :newline [:char 11] :form-feed :return [:char 133] [:char 8232] [:char 8233]])
+      :vertical-whitespace
+      result)))
 
 (defmethod transform [:BCCElemHardLeft :common] [[_ x]] (transform x))
 (defmethod transform [:BCCElemNonLeft :common] [[_ x]] (transform x))
@@ -180,22 +246,15 @@
 (defmethod transform [:BCCRange :common] [[_ x y]]
   [(transform x) (transform y)])
 
-(defmethod transform [:GroupFlags :common] [[_ x]]
-  (case (first x)
-    :NamedCapturingGroup
-    (throw (ex-info "Not implemented" {:feature (first x)}))
-    :NonCapturingMatchFlags
-    [:non-capturing-group (transform x)]
-    :PositiveLookAheadFlag
-    (throw (ex-info "Not implemented" {:feature (first x)}))
-    :NegativeLookAheadFlag
-    (throw (ex-info "Not implemented" {:feature (first x)}))
-    :PositiveLookBehindFlag
-    (throw (ex-info "Not implemented" {:feature (first x)}))
-    :NegativeLookBehindFlag
-    (throw (ex-info "Not implemented" {:feature (first x)}))
-    :IndependentNonCapturingFlag
-    (throw (ex-info "Not implemented" {:feature (first x)}))))
+(defmethod transform [:GroupFlags :common] [[_ g :as x]]
+  (case (first g)
+    :NonCapturingMatchFlags      [:non-capturing-group (transform g)]
+    :PositiveLookAheadFlag       [:lookahead]
+    :NegativeLookAheadFlag       [:negative-lookahead]
+    :PositiveLookBehindFlag      [:lookbehind]
+    :NegativeLookBehindFlag      [:negative-lookbehind]
+    :IndependentNonCapturingFlag [:atomic]
+    :NamedCapturingGroup         [::not-implemented x]))
 
 (defmethod transform [:NonCapturingMatchFlags :common] [[_ x]] (transform x))
 (defmethod transform [:MatchFlagsExpr :common] [[_ & xs]] xs)
@@ -207,17 +266,18 @@
           form (transform y)]
       (case type
         :non-capturing-group
-        (with-meta (if (string? form)
-                     [:cat form]
-                     form)
-          {::flags flags})))
+        form
+        [type form]))
     [:capture (transform x)]))
 
-(defn parse [pattern]
+(defn parse-pattern [pattern]
   (->> pattern
        remove-QE
        (instaparse/parse @parser)
        transform))
+
+(defn parse [regex]
+  (parse-pattern (regal/regex-pattern regex)))
 
 (comment
   (for [p ["[x]" "[xy]" "[x-y]" "[^x-y]" "[x-y_]"]]
@@ -228,7 +288,10 @@
    ;;(parse "(?<name>x)")
    ;;(parse "(?idmsuxU)x")
 
+   (parse "(?<foo)")
+   (parse "(?>foo)")
    (parse "(?-idmsuxU:x)")]
+
   (require 'lambdaisland.regal.test-util)
   (for [{:keys [cases]} (lambdaisland.regal.test-util/test-cases)
         {:keys [pattern form]} cases]
@@ -244,6 +307,10 @@
   (prn (s/gen :lambdaisland.regal/form))
 
   (regal/regex [:cat "abc"])
-  (transform (instaparse/parse @parser "(?:x|yz)"))
+  (instaparse/parse @parser "(?!x)")
 
-  (parse "\\u000D\\u000A|[\\u000A\\u000B\\u000C\\u000D\\u0085\\u2028\\u2029]"))
+  (parse "\\u000D\\u000A|[\\u000A\\u000B\\u000C\\u000D\\u0085\\u2028\\u2029]")
+
+
+
+  )
