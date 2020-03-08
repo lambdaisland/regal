@@ -1,6 +1,7 @@
 (ns lambdaisland.regal-test
   (:require [lambdaisland.regal :as regal]
             [lambdaisland.regal.spec-alpha]
+            [lambdaisland.regal.generator :as regal-gen]
             [lambdaisland.regal.test-util :as test-util]
             [lambdaisland.regal.parse :as parse]
             [clojure.spec.test.alpha :as stest]
@@ -105,4 +106,11 @@
                           (some equivalent (test-util/flavor-parents (regal/runtime-flavor)))
                           equivalent)]
           (testing (str "Alternative equivalent pattern " (pr-str pattern) " matches")
-            (is (= match (re-find (regal/compile pattern) input)))))))))
+            (is (= match (re-find (regal/compile pattern) input)))))))
+
+    (is (regal-gen/gen form))
+
+    ;; We should do this with proper properties so we get shrinking, just a
+    ;; basic check for now
+    (doseq [s (regal-gen/sample form)]
+      (is (re-find (regal/regex form) s)))))

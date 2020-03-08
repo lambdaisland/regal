@@ -37,6 +37,9 @@
 
 (def ^:dynamic *flavor* (runtime-flavor))
 
+(defn current-flavor? [f]
+  (isa? flavor-hierarchy *flavor* f))
+
 #?(:clj
    (defmacro with-flavor
      "Set the flavor of regex to use for generating and parsing regex patterns.
@@ -164,7 +167,7 @@
       (re-find #"\\0[0-3][0-7]{2}" s)
 
       5
-      (if (isa? *flavor* :java)
+      (if (current-flavor? :java)
         (or (when-let [[_ match] (re-find #"\\Q(.*)\\E" s)]
               (single-character? match))
             (re-find #"\\u[0-9a-zA-Z]{4}" s))
@@ -353,6 +356,8 @@
 
 
 (comment
+
+  (regex [:class :any])
 
   (with-flavor :ecma
     (pattern [:class :line-break "xyz"])

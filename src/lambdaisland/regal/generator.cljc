@@ -35,10 +35,77 @@
      :cljs
      (.charCodeAt s 0)))
 
+(defn token-gen [r opts]
+  (case r
+    :any
+    gen/char
+
+    :digit
+    (recur [:class [\0 \9]] opts)
+
+    :non-digit
+    (recur [:not [\0 \9]] opts)
+
+    :word
+    (recur [:class [\a \z] [\A \Z] [\0 \9] \_] opts)
+
+    :non-word
+    (recur [:not [\a \z] [\A \Z] [\0 \9] \_] opts)
+
+    :whitespace
+    (recur [:class \space \tab \newline \u000B \formfeed \return] opts)
+
+    :non-whitespace
+    (recur [:not \space \tab \newline \u000B \formfeed \return] opts)
+
+    :start
+    (gen/return "")
+
+    :end
+    (gen/return "")
+
+    :newline
+    (gen/return "\n")
+
+    :return
+    (gen/return "\r")
+
+    :tab
+    (gen/return "\t")
+
+    :form-feed
+    (gen/return "\f")
+
+    :line-break
+    (gen/one-of (map gen/return ["\r\n" "\n" "\u000B" "\f" "\r" "\u0085" "\u2028" "\u2029"]))
+
+    :alert
+    (gen/return "\u0007")
+
+    :escape
+    (gen/return "\u001B")
+
+    :vertical-whitespace
+    (gen/one-of (map gen/return ["\n" "\u000B" "\f" "\r" "\u0085" "\u2028" "\u2029"]))
+
+    :vertical-tab
+    (gen/return "\u000B")
+
+    :null
+    (gen/return "\u0000")
+
+    (throw (ex-info (str "Unrecognized regal token: " r) {::unrecognized-token r}))))
+
 (defmethod -generator :class [[_ & cs] opts]
   (gen/one-of (for [c cs]
-                (if (vector? c)
+                (cond
+                  (vector? c)
                   (gen/fmap char (gen/choose (char-code (first c)) (char-code (second c))))
+
+                  (simple-keyword? c)
+                  (token-gen c opts)
+
+                  (or (string? c) (char? c))
                   (gen/return c)))))
 
 (defmethod -generator :not [r opts]
@@ -53,6 +120,13 @@
 
 (defmethod -generator :capture [[_ & rs] opts]
   (generator (into [:cat] rs) opts))
+
+(defmethod -generator :ctrl [[_ ch] opts]
+  (gen/return (str (char (- (long (if (char? ch)
+                                    ch
+                                    (first ch)))
+                            64)))))
+
 
 (defn- generator [r {:keys [resolver] :as opts}]
   (cond
@@ -72,36 +146,7 @@
                       {::no-resolver-for r})))
 
     (simple-keyword? r)
-    (case r
-      :any
-      gen/char
-
-
-      :digit
-      (recur [:class [\0 \9]] opts)
-
-      :non-digit
-      (recur [:not [\0 \9]] opts)
-
-      :word
-      (recur [:class [\a \z] [\A \Z] [\0 \9] \_] opts)
-
-      :non-word
-      (recur [:not [\a \z] [\A \Z] [\0 \9] \_] opts)
-
-      :whitespace
-      (recur [:class \space \tab \newline \u000B \formfeed \return] opts)
-
-      :non-whitespace
-      (recur [:not \space \tab \newline \u000B \formfeed \return] opts)
-
-      :start
-      (gen/return "")
-
-      :end
-      (gen/return "")
-
-      (throw (ex-info (str "Unrecognized regal token: " r) {::unrecognized-token r})))
+    (token-gen r opts)
 
     :else
     (-generator r opts)))
@@ -110,7 +155,7 @@
   #?@(:clj
       [([g]
         (let [sb (StringBuilder.)]
-          (run! #(grouped->str % sb) g)
+          (grouped->str g sb)
           (str sb)))
        ([g ^StringBuilder sb]
         (cond
