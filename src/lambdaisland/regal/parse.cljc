@@ -146,12 +146,42 @@
     [:negative-lookahead [:cat :return :newline]]
     [:class [:newline :return] [:char 133] [:char 8232] [:char 8233]]]])
 
+(def whitespace-equivalent
+  [:class
+   [:char 9]
+   [:char 10]
+   [:char 11]
+   [:char 12]
+   [:char 13]
+   [:char 32]
+   [:char 160]
+   [:char 5760]
+   [:char 8192]
+   [:char 8193]
+   [:char 8194]
+   [:char 8195]
+   [:char 8196]
+   [:char 8197]
+   [:char 8198]
+   [:char 8199]
+   [:char 8200]
+   [:char 8201]
+   [:char 8202]
+   [:char 8232]
+   [:char 8233]
+   [:char 8239]
+   [:char 8287]
+   [:char 12288]])
+
+(def vertical-whitespace-equivalent
+  [:class :newline [:char 11] :form-feed :return [:char 133] [:char 8232] [:char 8233]])
+
 (defmethod transform [:Alternation :common] [[_ & alts]]
   (let [alts (map transform alts)]
     (if (= (count alts) 1)
       (first alts)
       (let [result (into [:alt] (remove nil?) alts)]
-        (if (and (contains? #{:java9 :ecma} regal/*flavor*)
+        (if (and (some regal/current-flavor? [:java9 :ecma])
                  (= result line-break-equivalent))
           :line-break
           result)))))
@@ -198,12 +228,36 @@
   (case ch
     \v
     :vertical-whitespace
+    \d
+    :digit
+    \D
+    :non-digit
+    \w
+    :word
+    \W
+    :non-word
+    \s
+    :whitespace
+    \S
+    :non-whitespace
     [::not-implemented x]))
 
 (defmethod transform [:SpecialCharClass :ecma] [[_ [ch] :as x]]
   (case ch
     \v
     :vertical-tab
+    \d
+    :digit
+    \D
+    :non-digit
+    \w
+    :word
+    \W
+    :non-word
+    \s
+    :whitespace
+    \S
+    :non-whitespace
     [::not-implemented (pr-str ch) x]))
 
 (defmethod transform [:ShortHexChar :java] [[_ x]]
@@ -236,12 +290,15 @@
     (into [:not] (comp (map transform) collapse-strings-xf) (next xs))
     (into [:class] (comp (map transform) collapse-strings-xf) xs)))
 
-(defmethod transform [:BCCUnionLeft :common] [x]
-  (tranform-bcc-union-left x))
+(defmethod transform [:BCCUnionLeft :java] [x]
+  (let [result (tranform-bcc-union-left x)]
+    (if (= result whitespace-equivalent)
+      :whitespace
+      result)))
 
 (defmethod transform [:BCCUnionLeft :ecma] [x]
   (let [result (tranform-bcc-union-left x)]
-    (if (= result [:class :newline [:char 11] :form-feed :return [:char 133] [:char 8232] [:char 8233]])
+    (if (= result vertical-whitespace-equivalent)
       :vertical-whitespace
       result)))
 

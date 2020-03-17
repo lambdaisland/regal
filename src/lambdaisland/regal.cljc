@@ -36,6 +36,7 @@
      :cljs :ecma))
 
 (def ^:dynamic *flavor* (runtime-flavor))
+(def ^:dynamic *character-class* false)
 
 (defn current-flavor? [f]
   (isa? flavor-hierarchy *flavor* f))
@@ -92,6 +93,38 @@
 ;; a regex pattern that is already treated as a single entity e.g. by
 ;; quantifiers, then the list is given the metadata `{::grouped true}`
 
+(def whitespace-chars
+  "These are characters with the Unicode whitespace property. In JavaScript these
+  are all matched by \\s, except for NEXT LINE and MONGOLIAN VOWEL SEPARATOR. In
+  Java \\s only matches the ASCII one. In Regal :whitespace emulates the
+  JavaScript semantics of \\s."
+  ["\\u0009" ;; CHARACTER TABULATION
+   "\\u000A" ;; LINE FEED (LF)
+   "\\u000B" ;; LINE TABULATION
+   "\\u000C" ;; FORM FEED (FF)
+   "\\u000D" ;; CARRIAGE RETURN (CR)
+   "\\u0020" ;; SPACE
+   ;; "\\u0085" ;; NEXT LINE (NEL)
+   "\\u00A0" ;; NO-BREAK SPACE
+   "\\u1680" ;; OGHAM SPACE MARK
+   ;; "\\u180E" ;; MONGOLIAN VOWEL SEPARATOR
+   "\\u2000" ;; EN QUAD
+   "\\u2001" ;; EM QUAD
+   "\\u2002" ;; EN SPACE
+   "\\u2003" ;; EM SPACE
+   "\\u2004" ;; THREE-PER-EM SPACE
+   "\\u2005" ;; FOUR-PER-EM SPACE
+   "\\u2006" ;; SIX-PER-EM SPACE
+   "\\u2007" ;; FIGURE SPACE
+   "\\u2008" ;; PUNCTUATION SPACE
+   "\\u2009" ;; THIN SPACE
+   "\\u200A" ;; HAIR SPACE
+   "\\u2028" ;; LINE SEPARATOR
+   "\\u2029" ;; PARAGRAPH SEPARATOR
+   "\\u202F" ;; NARROW NO-BREAK SPACE
+   "\\u205F" ;; MEDIUM MATHEMATICAL SPACE
+   "\\u3000"]) ;; IDEOGRAPHIC SPACE
+
 (defmulti token->ir (fn [token] [token *flavor*]) :hierarchy #'flavor-hierarchy)
 
 (defmethod token->ir :default [token]
@@ -110,7 +143,11 @@
 (defmethod token->ir [:non-digit :common] [_] "\\D")
 (defmethod token->ir [:word :common] [_] "\\w")
 (defmethod token->ir [:non-word :common] [_] "\\W")
-(defmethod token->ir [:whitespace :common] [_] "\\s")
+(defmethod token->ir [:whitespace :java] [_]
+  (if *character-class*
+    (str/join whitespace-chars)
+    (str "[" (str/join whitespace-chars) "]")))
+(defmethod token->ir [:whitespace :ecma] [_] "\\s")
 (defmethod token->ir [:non-whitespace :common] [_] "\\S")
 (defmethod token->ir [:newline :common] [_] "\\n")
 (defmethod token->ir [:return :common] [_] "\\r")
@@ -118,8 +155,19 @@
 (defmethod token->ir [:form-feed :common] [_] "\\f")
 
 (defmethod token->ir [:line-break :java8] [_] "\\R")
-(defmethod token->ir [:line-break :java9] [_] "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])")
-(defmethod token->ir [:line-break :ecma] [_] "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])")
+
+(defmethod token->ir [:line-break :java9] [_]
+  (if *character-class*
+    ;; we can't emulate the atomic behavior
+    ;; of :line-break when used inside a character
+    ;; class
+    "\\R"
+    "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"))
+
+(defmethod token->ir [:line-break :ecma] [_]
+  (if *character-class*
+    "\\R"
+    "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"))
 
 (defmethod token->ir [:alert :java] [_] "\\a")
 (defmethod token->ir [:alert :ecma] [_] "\\x07")
@@ -128,7 +176,10 @@
 (defmethod token->ir [:escape :ecma] [_] "\\x1B")
 
 (defmethod token->ir [:vertical-whitespace :java] [_] "\\v")
-(defmethod token->ir [:vertical-whitespace :ecma] [_] "[\\n\\x0B\\f\\r\\x85\\u2028\\u2029]")
+(defmethod token->ir [:vertical-whitespace :ecma] [_]
+  (if *character-class*
+    "\\n\\x0B\\f\\r\\x85\\u2028\\u2029"
+    "[\\n\\x0B\\f\\r\\x85\\u2028\\u2029]"))
 
 (defmethod token->ir [:vertical-tab :java] [_] "\\x0B")
 (defmethod token->ir [:vertical-tab :ecma] [_] "\\v")
@@ -230,7 +281,8 @@
           cs))
 
 (defmethod -regal->ir [:class :common] [[_ & cs] opts]
-  `^::grouped (\[ ~@(compile-class cs) \]))
+  (binding [*character-class* true]
+    `^::grouped (\[ ~@(compile-class cs) \])))
 
 (defmethod -regal->ir [:not :common] [[_ & cs] opts]
   `^::grouped (\[ \^ ~@(compile-class cs) \]))

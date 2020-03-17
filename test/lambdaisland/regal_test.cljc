@@ -112,5 +112,6 @@
 
     ;; We should do this with proper properties so we get shrinking, just a
     ;; basic check for now
-    (doseq [s (regal-gen/sample form)]
-      (is (re-find (regal/regex form) s)))))
+    (testing "generated strings match the given pattern"
+      (doseq [s (regal-gen/sample form)]
+        (is (re-find (regal/regex form) s))))))

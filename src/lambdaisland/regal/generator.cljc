@@ -38,25 +38,25 @@
 (defn token-gen [r opts]
   (case r
     :any
-    gen/char
+    (gen/such-that (complement #{\r \n}) gen/char) ;; . does not match newlines
 
     :digit
-    (recur [:class [\0 \9]] opts)
+    (-generator [:class [\0 \9]] opts)
 
     :non-digit
-    (recur [:not [\0 \9]] opts)
+    (-generator [:not [\0 \9]] opts)
 
     :word
-    (recur [:class [\a \z] [\A \Z] [\0 \9] \_] opts)
+    (-generator [:class [\a \z] [\A \Z] [\0 \9] \_] opts)
 
     :non-word
-    (recur [:not [\a \z] [\A \Z] [\0 \9] \_] opts)
+    (-generator [:not [\a \z] [\A \Z] [\0 \9] \_] opts)
 
     :whitespace
-    (recur [:class \space \tab \newline \u000B \formfeed \return] opts)
+    (-generator [:class \space \tab \newline \u000B \formfeed \return] opts)
 
     :non-whitespace
-    (recur [:not \space \tab \newline \u000B \formfeed \return] opts)
+    (-generator [:not \space \tab \newline \u000B \formfeed \return] opts)
 
     :start
     (gen/return "")
