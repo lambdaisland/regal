@@ -1,6 +1,7 @@
 (ns lambdaisland.regal.generator
-  (:require [lambdaisland.regal :as regal]
-            [clojure.test.check.generators :as gen]))
+  (:require [clojure.test.check.generators :as gen]
+            [lambdaisland.regal :as regal]
+            [lambdaisland.regal.platform :as platform]))
 
 (declare generator)
 
@@ -30,7 +31,7 @@
   #?(:clj
      (cond
        (string? s) (.charCodeAt ^String s 0)
-       (char? s)   (long s)
+       (char? s)   (platform/char->long s)
        :else       (assert false s))
      :cljs
      (.charCodeAt s 0)))
@@ -122,9 +123,10 @@
   (generator (into [:cat] rs) opts))
 
 (defmethod -generator :ctrl [[_ ch] opts]
-  (gen/return (str (char (- (long (if (char? ch)
-                                    ch
-                                    (first ch)))
+  (gen/return (str (char (- (platform/char->long
+                             (if (char? ch)
+                               ch
+                               (first ch)))
                             64)))))
 
 

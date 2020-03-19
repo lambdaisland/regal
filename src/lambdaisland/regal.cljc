@@ -98,6 +98,7 @@
   are all matched by \\s, except for NEXT LINE and MONGOLIAN VOWEL SEPARATOR. In
   Java \\s only matches the ASCII one. In Regal :whitespace emulates the
   JavaScript semantics of \\s."
+  ^::grouped
   ["\\u0009" ;; CHARACTER TABULATION
    "\\u000A" ;; LINE FEED (LF)
    "\\u000B" ;; LINE TABULATION
@@ -125,6 +126,20 @@
    "\\u205F" ;; MEDIUM MATHEMATICAL SPACE
    "\\u3000"]) ;; IDEOGRAPHIC SPACE
 
+(def non-whitespace-ranges
+  "Character ranges that are not whitespace (the opposite of the above)"
+  ^::grouped
+  ["\\x00-\\x08"
+   "\\x0E-\\x1F"
+   "\\x21-\\x9F"
+   "\\xA1-\\u167F"
+   "\\u1681-\\u1FFF"
+   "\\u200B-\\u2027"
+   "\\u202A-\\u202E"
+   "\\u2030-\\u205E"
+   "\\u2060-\\u2FFF"
+   "\\u3001-\\uFFFF"])
+
 (defmulti token->ir (fn [token] [token *flavor*]) :hierarchy #'flavor-hierarchy)
 
 (defmethod token->ir :default [token]
@@ -143,12 +158,6 @@
 (defmethod token->ir [:non-digit :common] [_] "\\D")
 (defmethod token->ir [:word :common] [_] "\\w")
 (defmethod token->ir [:non-word :common] [_] "\\W")
-(defmethod token->ir [:whitespace :java] [_]
-  (if *character-class*
-    (str/join whitespace-chars)
-    (str "[" (str/join whitespace-chars) "]")))
-(defmethod token->ir [:whitespace :ecma] [_] "\\s")
-(defmethod token->ir [:non-whitespace :common] [_] "\\S")
 (defmethod token->ir [:newline :common] [_] "\\n")
 (defmethod token->ir [:return :common] [_] "\\r")
 (defmethod token->ir [:tab :common] [_] "\\t")
@@ -180,6 +189,22 @@
   (if *character-class*
     "\\n\\x0B\\f\\r\\x85\\u2028\\u2029"
     "[\\n\\x0B\\f\\r\\x85\\u2028\\u2029]"))
+
+(defmethod token->ir [:whitespace :java] [_]
+  (if *character-class*
+    whitespace-chars
+    `^::grouped (\[ ~whitespace-chars \])))
+
+(defmethod token->ir [:non-whitespace :java] [_]
+  (if *character-class*
+    ;; if we're part of a bigger character class then emulate non-whitespace by
+    ;; including ranges of characters that are not whitespace between
+    ;; Character/MIN_VALUE and Character/MAX_VALUE
+    non-whitespace-ranges
+    `^::grouped (\[ \^ ~whitespace-chars \])))
+
+(defmethod token->ir [:whitespace :ecma] [_] "\\s")
+(defmethod token->ir [:non-whitespace :ecma] [_] "\\S")
 
 (defmethod token->ir [:vertical-tab :java] [_] "\\x0B")
 (defmethod token->ir [:vertical-tab :ecma] [_] "\\v")
@@ -319,7 +344,7 @@
 
 (defmethod -regal->ir [:ctrl :common] [[_ ch] opts]
   (let [ch (if (string? ch) (first ch) ch)]
-    (assert (<= (long \A) (long ch) (long \Z)))
+    (assert (<= (platform/char->long \A) (platform/char->long ch) (platform/char->long \Z)))
     `^::grouped (\\ \c ~ch)))
 
 (defn- regal->ir

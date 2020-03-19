@@ -21,11 +21,12 @@
         :let [[props tests] (if (map? (first tests))
                               [(first tests) (rest tests)]
                               [{} tests])]]
-    (merge
-     {:pattern   pattern
-      :form      form
-      :tests     tests}
-     props)))
+    (with-meta (merge
+                {:pattern   pattern
+                 :form      form
+                 :tests     tests}
+                props)
+      (meta case))))
 
 (defn test-cases
   ([]

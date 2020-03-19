@@ -80,38 +80,41 @@
 
 (deftest data-based-tests
   (doseq [{:keys [id cases]} (test-util/test-cases)
-          {:keys [form pattern equivalent tests]} cases]
+          {:keys [form pattern equivalent tests] :as case} cases]
 
-    (is (s/valid? ::regal/form form))
+    (testing (str (pr-str form) " -> " (pr-str pattern))
+      (is (s/valid? ::regal/form form))
 
-    (doseq [flavor [:java8 :java9 :ecma]
-            :let [pattern (if (map? pattern)
-                            (some pattern (test-util/flavor-parents flavor))
-                            pattern)]]
-      (testing (str "Generated pattern is correct (" (name id) ") " (pr-str form) " (" flavor ")")
-        (regal/with-flavor flavor
-          (is (= pattern (regal/pattern form)))))
+      (doseq [flavor [:java8 :java9 :ecma]
+              :let [pattern (if (map? pattern)
+                              (some pattern (test-util/flavor-parents flavor))
+                              pattern)]]
+        (testing (str "Generated pattern is correct (" (name id) ") " (pr-str form) " (" flavor ")")
+          (regal/with-flavor flavor
+            (is (= pattern (regal/pattern form)))))
 
-      (testing (str "Pattern parses correctly (" (name id) ") " (pr-str pattern) " (" flavor ")")
-        (regal/with-flavor flavor
-          (is (= form (parse/parse-pattern pattern))))))
+        (when-not (:no-parse (meta case))
+          (testing (str "Pattern parses correctly (" (name id) ") " (pr-str pattern) " (" flavor ")")
+            (regal/with-flavor flavor
+              (is (= form (parse/parse-pattern pattern)))))))
 
-    (doseq [[input match] tests]
-      (testing (str "Test case " (pr-str form) " matches " (pr-str input))
+      (doseq [[input match] tests]
+        (testing (str "Test case " (pr-str form) " matches " (pr-str input))
 
-        (testing "Generated pattern matches"
-          (is (= match (re-find (regal/regex form) input))))
+          (testing "Generated pattern matches"
+            (is (= match (re-find (regal/regex form) input))))
 
-        (doseq [pattern (if (map? equivalent)
-                          (some equivalent (test-util/flavor-parents (regal/runtime-flavor)))
-                          equivalent)]
-          (testing (str "Alternative equivalent pattern " (pr-str pattern) " matches")
-            (is (= match (re-find (regal/compile pattern) input)))))))
+          (doseq [pattern (if (map? equivalent)
+                            (some equivalent (test-util/flavor-parents (regal/runtime-flavor)))
+                            equivalent)]
+            (testing (str "Alternative equivalent pattern " (pr-str pattern) " matches")
+              (is (= match (re-find (regal/compile pattern) input)))))))
 
-    (is (regal-gen/gen form))
+      (testing (str "creating a generator does not throw exception " (pr-str form))
+        (is (regal-gen/gen form)))
 
-    ;; We should do this with proper properties so we get shrinking, just a
-    ;; basic check for now
-    (testing "generated strings match the given pattern"
-      (doseq [s (regal-gen/sample form)]
-        (is (re-find (regal/regex form) s))))))
+      ;; We should do this with proper properties so we get shrinking, just a
+      ;; basic check for now
+      (testing (str "generated strings match the given pattern " (pr-str form))
+        (doseq [s (regal-gen/sample form)]
+          (is (re-find (regal/regex form) s)))))))

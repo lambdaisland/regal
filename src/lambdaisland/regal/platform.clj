@@ -7,3 +7,6 @@
 (defn int->hex [i]
   (str/upper-case
    (Integer/toHexString i)))
+
+(defn char->long [ch]
+  (long ch))

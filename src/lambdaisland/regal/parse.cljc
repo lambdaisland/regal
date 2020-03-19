@@ -146,9 +146,8 @@
     [:negative-lookahead [:cat :return :newline]]
     [:class [:newline :return] [:char 133] [:char 8232] [:char 8233]]]])
 
-(def whitespace-equivalent
-  [:class
-   [:char 9]
+(def whitespace-chars
+  [[:char 9]
    [:char 10]
    [:char 11]
    [:char 12]
@@ -172,6 +171,23 @@
    [:char 8239]
    [:char 8287]
    [:char 12288]])
+
+(def whitespace-equivalent (into [:class] whitespace-chars))
+(def neg-whitespace-equivalent (into [:not] whitespace-chars))
+
+#_
+(def non-whitespace-ranges-equivalent
+  [:class
+   [:null [:char 8]]
+   [[:char 14] [:char 31]]
+   [[:char 33] [:char 159]]
+   [[:char 161] [:char 5759]]
+   [[:char 5761] [:char 8191]]
+   [[:char 8203] [:char 8231]]
+   [[:char 8234] [:char 8238]]
+   [[:char 8240] [:char 8286]]
+   [[:char 8288] [:char 12287]]
+   [[:char 12289] [:char 65535]]])
 
 (def vertical-whitespace-equivalent
   [:class :newline [:char 11] :form-feed :return [:char 133] [:char 8232] [:char 8233]])
@@ -292,8 +308,16 @@
 
 (defmethod transform [:BCCUnionLeft :java] [x]
   (let [result (tranform-bcc-union-left x)]
-    (if (= result whitespace-equivalent)
+    (cond
+      (= result whitespace-equivalent)
       :whitespace
+      (= result neg-whitespace-equivalent)
+      :non-whitespace
+      ;; We're overfitting our test cases here, gonna leave this for now. This
+      ;; means we don't correctly round-trip this case.
+      ;; (= result non-whitespace-ranges-equivalent)
+      ;; [:class :non-whitespace]
+      :else
       result)))
 
 (defmethod transform [:BCCUnionLeft :ecma] [x]

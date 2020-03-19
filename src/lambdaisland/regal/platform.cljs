@@ -7,3 +7,6 @@
 (defn int->hex [i]
   (str/upper-case
    (.toString i 16)))
+
+(defn char->long [ch]
+  (.charCodeAt ^String ch))

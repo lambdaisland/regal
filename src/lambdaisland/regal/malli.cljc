@@ -1,7 +1,6 @@
 (ns lambdaisland.regal.malli
-  (:require [malli.core :as m]
-            [lambdaisland.regal :as regal]))
-
+  (:require [lambdaisland.regal :as regal]
+            [malli.core :as m]))
 
 (defn- -regal-schema []
   ^{:type ::into-schema}
