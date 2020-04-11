@@ -29,7 +29,7 @@
 (defn runtime-flavor
   "The regex flavor that the current runtime understands."
   []
-  #?(:clj (let [version (re-find #"\A\d+" (System/getProperty "java.runtime.version"))]
+  #?(:clj (let [version (re-find #"\A\d+" (System/getProperty "java.version"))]
             (if (= "1" version) ;; 1.8 vs 9 / 11
               :java8
               :java9))
