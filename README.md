@@ -2,9 +2,21 @@
 
 _Royally reified regular expressions_
 
+
 <!-- badges -->
 [![CircleCI](https://circleci.com/gh/lambdaisland/regal.svg?style=svg)](https://circleci.com/gh/lambdaisland/regal) [![cljdoc badge](https://cljdoc.org/badge/lambdaisland/regal)](https://cljdoc.org/d/lambdaisland/regal) [![Clojars Project](https://img.shields.io/clojars/v/lambdaisland/regal.svg)](https://clojars.org/lambdaisland/regal)
 <!-- /badges -->
+
+# tl;dr
+
+Regal lets you manipulate regular expressions as data, by providing a
+Hiccup-like regex syntax, and ways to convert between this Hiccup syntax (Regal
+syntax), compiled regex patterns, and test.check generators. It also helps with
+writing cross-platform code by providing consistent semantics across JS/Java
+runtimes, and it allows converting JavaScript regex to Java regex semantically
+(useful for e.g. dealing with JSON Schema in Clojure)
+
+# The slightly longer version
 
 Regal provides a syntax for writing regular expressions using plain Clojure
 data: vectors, keywords, strings. This is known as Regal notation.
@@ -162,6 +174,9 @@ To use the regex engine provided by the runtime (e.g. through `re-find` or
   - `[:repeat form min max]` : repeat a form a number of times, like `{2,5}`
   - `[:capture forms...]` : capturing group with implicit concatenation of the given forms
 - A `clojure.spec.alpha` definition of the grammar can be made available as `:lambdaisland.regal/form` by explicitly requiring `lambdaisland.regal.spec-alpha`
+
+You can add your own extensions (custom tokens) by providing a `:registry` option
+mapping namespaced keywords to Regal expressions.
 
 ### Use with spec.alpha
 
