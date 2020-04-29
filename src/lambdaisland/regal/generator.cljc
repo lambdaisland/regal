@@ -1,14 +1,33 @@
 (ns lambdaisland.regal.generator
   (:require [clojure.test.check.generators :as gen]
             [lambdaisland.regal :as regal]
-            [lambdaisland.regal.platform :as platform]))
+            [lambdaisland.regal.platform :as platform]
+            [clojure.string :as str]))
 
 (declare generator)
 
 (defmulti -generator (fn [[op] opts] op))
 
+(defn collapse-double-line-breaks [rs]
+  (let [[res prev] (reduce
+                    (fn [[res prev] r]
+                      (cond
+                        (= prev r :line-break)
+                        [(conj res :-double-line-break) nil]
+                        prev
+                        [(conj res prev) r]
+                        :else
+                        [res r]
+                        )
+                      )
+                    [[] nil]
+                    rs)]
+    (if prev
+      (conj res prev)
+      res)))
+
 (defmethod -generator :cat [[_ & rs] opts]
-  (apply gen/tuple (map #(generator % opts) rs)))
+  (apply gen/tuple (map #(generator % opts) (collapse-double-line-breaks rs))))
 
 (defmethod -generator :alt [[_ & rs] opts]
   (gen/one-of (map #(generator % opts) rs)))
@@ -36,10 +55,47 @@
      :cljs
      (.charCodeAt s 0)))
 
+(defn parse-hex
+  "
+  \"\\xFF\" => 255
+  \"\\u0A00\" => 2560
+  "
+  [h]
+  (platform/hex->int (subs h 2)))
+
+(def any-gen
+  (gen/such-that (complement #{\r \n}) gen/char))
+
+(def whitespace-gen
+  (gen/fmap (comp char parse-hex) (gen/one-of (map gen/return regal/whitespace-chars))))
+
+(def non-whitespace-gen
+  (gen/fmap
+   char
+   (gen/one-of
+    (map
+     (comp
+      (fn [[from to]]
+        (gen/choose (parse-hex from)
+                    (parse-hex to)))
+      #(str/split % #"-"))
+     regal/non-whitespace-ranges))))
+
+(def line-break-gen
+  (gen/one-of (map gen/return ["\r\n" "\n" "\u000B" "\f" "\r" "\u0085" "\u2028" "\u2029"])))
+
+(def double-line-break-gen
+  "[:cat :line-break :line-break] should not generate \\r\\n, because of how \\R
+  works."
+  (gen/such-that
+   (complement #{"\r\n"})
+   (gen/fmap #(apply str %)
+             (gen/tuple line-break-gen line-break-gen))))
+
 (defn token-gen [r opts]
   (case r
     :any
-    (gen/such-that (complement #{\r \n}) gen/char) ;; . does not match newlines
+    any-gen ;; . does not match newlines
 
     :digit
     (-generator [:class [\0 \9]] opts)
@@ -54,10 +110,10 @@
     (-generator [:not [\a \z] [\A \Z] [\0 \9] \_] opts)
 
     :whitespace
-    (-generator [:class \space \tab \newline \u000B \formfeed \return] opts)
+    whitespace-gen
 
     :non-whitespace
-    (-generator [:not \space \tab \newline \u000B \formfeed \return] opts)
+    non-whitespace-gen
 
     :start
     (gen/return "")
@@ -78,7 +134,10 @@
     (gen/return "\f")
 
     :line-break
-    (gen/one-of (map gen/return ["\r\n" "\n" "\u000B" "\f" "\r" "\u0085" "\u2028" "\u2029"]))
+    line-break-gen
+
+    :-double-line-break ;; internal, do not use
+    double-line-break-gen
 
     :alert
     (gen/return "\u0007")
@@ -105,6 +164,12 @@
 
                   (simple-keyword? c)
                   (token-gen c opts)
+
+                  ;; Not sure if this should be allowed, can custom tokens be
+                  ;; used inside a class?
+                  ;;
+                  ;; (qualified-keyword? c)
+                  ;; (generator c opts)
 
                   (or (string? c) (char? c))
                   (gen/return c)))))

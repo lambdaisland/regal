@@ -85,7 +85,10 @@ UnicodeCharacterClass = <'\\'> #'[pP]' (#"[CLMNPSZ]" | #"\{[a-zA-Z]+\}")
 NormalSlashedCharacters = #"\\[tnrfae]"
 
 (* why did I think you could have a backslashed character here?? *)
-ControlChar = <'\\c'> #"(?s)."
+(* ARNE: this was #"(?s).", but that errors on Firefox: SyntaxError: invalid regular expression flag s
+   so we emulate "make dot match all characters including newlines by using a range of all characters
+   Note that JS and Java both still treat strings as UCS-2, so we can ignore higher Unicode planes. *)
+ControlChar = <'\\c'> #"[\u0000-\uFFFF]"
 
 (** FLAGS **)
 GroupFlags = NamedCapturingGroup
