@@ -1,0 +1,18 @@
+{:deps
+ {:aliases [:dev :chui :test-check :cljs]}
+
+ :dev-http
+ {8888 "classpath:public"}
+
+ :builds
+ {:test
+  {:target     :browser-test
+   :runner-ns  lambdaisland.chui.shadowrun
+   :test-dir   "resources/public"
+   :asset-path "/ui"
+   :ns-regexp  "-test$"
+   :devtools   {:repl-pprint true}}}
+
+ :cache-blockers #{lambdaisland.chui.test-data
+                   lambdaisland.chui.styles
+                   lambdaisland.regal.test-util}}

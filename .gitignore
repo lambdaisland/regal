@@ -7,3 +7,6 @@ scratch.clj
 
 node_modules
 out
+.shadow-cljs
+package-lock.json
+resources/public

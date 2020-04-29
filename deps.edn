@@ -1,6 +1,6 @@
 {:paths ["src" "test" "resources"]
  :deps  {org.clojure/clojure {:mvn/version "1.10.1"}
-         instaparse {:mvn/version "1.4.10"}}
+         instaparse          {:mvn/version "1.4.10"}}
 
  :aliases
  {:dev
@@ -28,6 +28,12 @@
 
   :cljs
   {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.597"}}}
+
+  :chui
+  {:extra-deps {thheller/shadow-cljs {:mvn/version "2.8.93"}
+                lambdaisland/chui    {#_#_:local/root "../chui"
+                                      :git/url        "https://github.com/lambdaisland/chui"
+                                      :sha            "2582633c1c5969045c84ef3d750a8de7787b46f3"}}}
 
   :test
   {:extra-deps {lambdaisland/kaocha      {:mvn/version "RELEASE"}
