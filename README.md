@@ -25,7 +25,9 @@ for Java's regex engine.
 <!-- opencollective -->
 ### Support Lambda Island Open Source
 
-If you find value in our work please consider [becoming a backer on Open Collective](http://opencollective.com/lambda-island#section-contribute)
+Regal is part of a growing collection of quality Clojure libraries and
+tools released on the Lambda Island label. If you find value in our work please
+consider [becoming a backer on Open Collective](http://opencollective.com/lambda-island#section-contribute)
 <!-- /opencollective -->
 
 ### An example
