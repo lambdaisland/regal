@@ -42,6 +42,20 @@ tools released on the Lambda Island label. If you find value in our work please
 consider [becoming a backer on Open Collective](http://opencollective.com/lambda-island#section-contribute)
 <!-- /opencollective -->
 
+## Installation
+
+deps.edn
+
+``` clojure
+lambdaisland/regal {:mvn/version "0.0"}
+```
+
+project.clj
+
+``` clojure
+[lambdaisland/regal "0.0"]
+```
+
 ### An example
 
 ``` clojure
