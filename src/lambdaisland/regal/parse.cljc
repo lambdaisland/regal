@@ -211,7 +211,18 @@
 
 (defmethod transform [:SuffixedExpr :common] [[_ expr suffix :as x]]
   (if suffix
-    [::not-implemented x]
+    (let [[_ [suffix-type] [_ [_ curly-min _ curly-max] :as curly]] suffix
+          form (case suffix-type
+                 :Optional
+                 [:? (transform expr)]
+                 :Positive
+                 [:+ (transform expr)]
+                 :NonNegative
+                 [:* (transform expr)]
+                 [::not-implemented x])]
+      (if (and curly-min curly-max)
+        [:repeat form curly-min curly-max]
+        form))
     (transform expr)))
 
 (defmethod transform [:ControlChar :common] [[_ [ch]]]
