@@ -108,7 +108,12 @@ NegativeLookAheadFlag = <'?!'>
 PositiveLookBehindFlag = <'?<='>
 NegativeLookBehindFlag = <'?<!'>
 IndependentNonCapturingFlag = <'?>'>
-(* the java 7 docs don't include 'c' here but openjdk accepts it for CANON_EQ *)
-MatchFlagsExpr = #"[idmsuxcU]" * ('-' #"[idmsuxcU]" *) ?
+
+(* TODO JavaScript does not actually have these inside a regex, only as trailing
+  modifiers like /foo/m. ClojureScript does seem to convert them though, so
+  that's confusing, but since this is about parsing the platform-specific
+  pattern I think we should not parse these on ClojureScript/JavaScript. *)
+
+MatchFlagsExpr = #"[gimus]" * ('-' #"[gimus]" *) ?
 
 GroupName = #"[a-zA-Z][a-zA-Z0-9]*"
