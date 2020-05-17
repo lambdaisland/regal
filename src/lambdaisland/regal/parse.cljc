@@ -112,6 +112,20 @@
 (defmethod transform [:BasicEscapedChar :common] [[_ f]] (transform f))
 (defmethod transform [:CharExpr :common] [[_ x]] (transform x))
 (defmethod transform [:Dot :common] [[_ x]] :any)
+(defmethod transform [:Anchor :common] [[_ char1 char2 :as anchor]]
+  (case char1
+    "^"
+    :start
+    "$"
+    :end
+    "\\"
+    (case char2
+      "A"
+      :start
+      "z"
+      :end
+      [::not-implemented anchor])
+    [::not-implemented anchor]))
 
 (defmethod transform [:DanglingCurlyRepetitions :common] [[_ & reps]])
 

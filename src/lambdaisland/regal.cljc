@@ -147,12 +147,8 @@
                   {::unrecognized-token token
                    ::flavor *flavor*})))
 
-(defmethod token->ir [:start :java] [_] "\\A")
-(defmethod token->ir [:start :ecma] [_] "^")
-
-(defmethod token->ir [:end :java] [_] "\\z")
-(defmethod token->ir [:end :ecma] [_] "$")
-
+(defmethod token->ir [:start :common] [_] "^")
+(defmethod token->ir [:end :common] [_] "$")
 (defmethod token->ir [:any :common] [_] ".")
 (defmethod token->ir [:digit :common] [_] "\\d")
 (defmethod token->ir [:non-digit :common] [_] "\\D")
