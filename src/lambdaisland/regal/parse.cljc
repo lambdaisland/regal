@@ -225,7 +225,7 @@
 
 (defmethod transform [:SuffixedExpr :common] [[_ expr suffix :as x]]
   (if suffix
-    (let [[_ [suffix-type] [_ [_ curly-min _ curly-max] :as curly]] suffix
+    (let [[_SuffixedExp [suffix-type curly-min _ curly-max]] suffix
           form (case suffix-type
                  :Optional
                  [:? (transform expr)]
@@ -233,10 +233,12 @@
                  [:+ (transform expr)]
                  :NonNegative
                  [:* (transform expr)]
+                 :CurlyRepetition
+                 (if curly-max
+                   [:repeat (transform expr) curly-min curly-max]
+                   [:repeat (transform expr) curly-min])
                  [::not-implemented x])]
-      (if (and curly-min curly-max)
-        [:repeat form curly-min curly-max]
-        form))
+      form)
     (transform expr)))
 
 (defmethod transform [:ControlChar :common] [[_ [ch]]]

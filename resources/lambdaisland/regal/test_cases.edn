@@ -197,4 +197,14 @@
   ["x" "x"]
   ["\t" nil]
   ["\u00A0" nil] ;; NON-BREAKING SPACE
-  ]]
+  ]
+
+
+ ;; Shorthands
+ ;; Anchors
+ ;; Word boundaries
+ ;; Quantifiers
+ ;; Capturing groups
+ ;; Special groups (Lookahead)
+ ;; Modifiers
+ ]
