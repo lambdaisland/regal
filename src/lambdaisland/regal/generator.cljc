@@ -171,7 +171,10 @@
                   ;; (qualified-keyword? c)
                   ;; (generator c opts)
 
-                  (or (string? c) (char? c))
+                  (string? c)
+                  (gen/one-of (map gen/return c))
+
+                  (char? c)
                   (gen/return c)))))
 
 (defmethod -generator :not [r opts]
@@ -258,6 +261,8 @@
 
 (comment
   (sample [:cat :digit :whitespace :word])
+
+  (sample [:class "aeiou" :whitespace])
 
   (sample
    [:cat

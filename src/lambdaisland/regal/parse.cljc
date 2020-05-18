@@ -412,6 +412,8 @@
    (parse "(?>foo)")
    (parse "(?-idmsuxU:x)")]
 
+  (parse "[aeiou]")
+
   (require 'lambdaisland.regal.test-util)
   (for [{:keys [cases]} (lambdaisland.regal.test-util/test-cases)
         {:keys [pattern form]} cases]
