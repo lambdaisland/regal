@@ -359,6 +359,7 @@
 (defmethod transform [:BCCCharNonRange :common] [[_ x]] (transform x))
 (defmethod transform [:BCCCharEndRange :common] [[_ x]] (transform x))
 (defmethod transform [:BCCChar :common] [[_ x]] (transform x))
+(defmethod transform [:BCCPlainAmpersand :common] [[_ x]] "&")
 (defmethod transform [:BCCPlainChar :common] [[_ x]] (transform x))
 (defmethod transform [:BCCRange :common] [[_ x y]]
   (let [from (transform x)

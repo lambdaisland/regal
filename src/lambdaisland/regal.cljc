@@ -294,7 +294,9 @@
               (conj r (char-class-escape c))
 
               (vector? c)
-              (conj r (first c) \- (second c))
+              (if (#{:char :ctrl} (first c))
+                (conj r (regal->ir c {}))
+                (conj r (first c) \- (second c)))
 
               (keyword? c)
               (conj r (token->ir c))))
