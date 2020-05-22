@@ -174,9 +174,28 @@ To use the regex engine provided by the runtime (e.g. through `re-find` or
 
 - Strings and characters match literally. They are escaped, so `.` matches a
   period, not any character, `^` matches a caret, etc.
-- A few keywords have special meaning. These are `:any` (match any character,
-  like `.`), `:start` (match the start of the input), `:end` (match the end of
-  the input).
+- A few keywords have special meaning.
+  - `:any` : match any character, like `.`. Does not match newlines.
+  - `:start` match the start of the input
+  - `:end` : match the end of the input
+  - `:digit` : match any digit (`0-9`)
+  - `:non-digit` : match non-digits (not `0-9`)
+  - `:word` : match word characters (`A-Za-z0-9_`)
+  - `:non-word` : match non-word characters (not `A-Za-z0-9_`)
+  - `:newline` : Match `\n`
+  - `:return` : Match `\r`
+  - `:tab` : Match `\t`
+  - `:form-feed` : Match `\f`
+  - `:line-break` : Match `\n`, `\r`, `\r\n`, or other unicode newline characters
+  - `:alert` : match `\a` (U+0007)
+  - `:escape` : match `\e` (U+001B)
+  - `:whitespace` : match any whitespace character. Uses `\s` on JavaScript, and
+    a character range of whitespace characters on Java with equivalent semantics
+    as JavaScript `\s`, since `\s` in Java only matches ASCII whitespace.
+  - `:non-whitespace` : match non-whitespace
+  - `:vertical-whitespace` : match vertical whitespace, including newlines and vertical tabs `#"\n\x0B\f\r\x85\u2028\u2029"`
+  - `:vertical-tab` : match a vertical tab `\v` (U+000B)
+  - `:null` : match a NULL byte/char
 - All other forms are vectors, with the first element being a keyword
   - `[:cat forms...]` : concatenation, match the given Regal expressions in order
   - `[:alt forms...]` : alternatives, match one of the given options, like `(foo|bar|baz)`
@@ -187,6 +206,13 @@ To use the regex engine provided by the runtime (e.g. through `re-find` or
   - `[:not entries...]` : like `:class`, but negates the result, equivalent to `[^...]`
   - `[:repeat form min max]` : repeat a form a number of times, like `{2,5}`
   - `[:capture forms...]` : capturing group with implicit concatenation of the given forms
+  - `[:char number]` : a single character, denoted by its unicode codepoint
+  - `[:ctrl char]` : a control character, e.g. `[:ctrl \A]` => `^A` => `#"\cA"`
+  - `[:lookahead ...]` : match if followed by pattern, without consuming input
+  - `[:negative-lookahead ...]` : match if not followed by pattern
+  - `[:lookbehind ...]` : match if preceded by pattern
+  - `[:negative-lookbehind ...]` : match if not preceded by pattern
+  - `[:atomic ...]` : match without backtracking ([atomic group](https://www.regular-expressions.info/atomic.html))
 - A `clojure.spec.alpha` definition of the grammar can be made available as `:lambdaisland.regal/form` by explicitly requiring `lambdaisland.regal.spec-alpha`
 
 You can add your own extensions (custom tokens) by providing a `:registry` option
