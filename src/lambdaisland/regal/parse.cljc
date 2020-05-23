@@ -235,8 +235,11 @@
                  [:* (transform expr)]
                  :CurlyRepetition
                  (if curly-max
-                   [:repeat (transform expr) curly-min curly-max]
-                   [:repeat (transform expr) curly-min])
+                   [:repeat
+                    (transform expr)
+                    (platform/parse-int curly-min)
+                    (platform/parse-int curly-max)]
+                   [:repeat (transform expr) (platform/parse-int curly-min)])
                  [::not-implemented x])]
       form)
     (transform expr)))

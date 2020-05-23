@@ -10,3 +10,6 @@
 
 (defn char->long [ch]
   (long ch))
+
+(defn parse-int [i]
+  (Long/parseLong i 10))

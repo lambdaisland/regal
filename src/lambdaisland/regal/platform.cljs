@@ -10,3 +10,6 @@
 
 (defn char->long [ch]
   (.charCodeAt ^String ch))
+
+(defn parse-int [i]
+  (js/parseInt i 10))
