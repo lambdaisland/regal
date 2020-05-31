@@ -9,7 +9,6 @@
 ;; (s/fdef regal/regex :args (s/cat :form ::regal/form
 ;;                                  :options (s/o)))
 
-
 (s/def ::regal/form
   (s/or :literal ::regal/literal
         :token   ::regal/token
@@ -43,56 +42,62 @@
                      (into [t] (rest v)))))
 
 (s/def ::regal/op
+  ;; RECURSIVE, needs the fmap to turn the result of s/cat into a vector
   (s/with-gen (s/and vector? ::regal/-op)
     #(spec-gen/fmap vec (s/gen ::regal/-op))))
 
-(defn op-spec [args-spec]
-  (s/cat :op keyword?
+(defn op-spec [op args-spec]
+  (s/cat :op #{op}
          :args args-spec))
 
 (defmethod op :cat [_]
-  (op-spec (s/+ ::regal/form)))
+  (op-spec :cat (s/+ ::regal/form)))
 
 (defmethod op :alt [_]
-  (op-spec (s/cat :form ::regal/form
-                  :rest (s/+ ::regal/form))))
+  (op-spec :alt (s/cat :form ::regal/form
+                       :rest (s/+ ::regal/form))))
 
 (defmethod op :capture [_]
-  (op-spec (s/+ ::regal/form)))
+  (op-spec :capture (s/+ ::regal/form)))
 
 (defmethod op :* [_]
-  (op-spec (s/+ ::regal/form)))
+  (op-spec :* (s/+ ::regal/form)))
 
 (defmethod op :+ [_]
-  (op-spec (s/+ ::regal/form)))
+  (op-spec :+ (s/+ ::regal/form)))
 
 (defmethod op :? [_]
-  (op-spec (s/+ ::regal/form)))
+  (op-spec :? (s/+ ::regal/form)))
 
 (s/def ::regal/repeat-min nat-int?)
 (s/def ::regal/repeat-max nat-int?)
 
 (s/def ::regal/repeat-impl
   (s/and
-   (op-spec (s/cat :form ::regal/form
-                   :min  ::regal/repeat-min
-                   :max  (s/? ::regal/repeat-max)))
+   (op-spec :repeat (s/cat :form ::regal/form
+                           :min  ::regal/repeat-min
+                           :max  (s/? ::regal/repeat-max)))
    (fn [{{:keys [_ min max]} :args}]
      (or (nil? max) (< min max)))))
 
 (def form-gen (s/gen ::regal/form))
 
 (defmethod op :repeat [_]
+  ;; RECURSIVE, so that generated values already have (< min max)
   (s/with-gen
     ::regal/repeat-impl
     (fn []
       (gen/fmap (fn [[form & minmax]]
-                  (into [form] (sort minmax)))
+                  (let [[min max] (sort minmax)]
+                    (if (= min max)
+                      [:repeat form min]
+                      [:repeat form min max])))
                 (gen/tuple form-gen gen/nat gen/nat)))))
 
 (s/def ::single-character
   (s/or :char char?
-        :string (s/and string? #(= (count %) 1))))
+        :string (s/with-gen (s/and string? #(= (count %) 1))
+                  #(gen/fmap str gen/char))))
 
 (s/def ::regal/class
   (s/+ (s/or :char   char?
@@ -102,13 +107,13 @@
              :token  ::regal/token)))
 
 (defmethod op :class [_]
-  (op-spec ::regal/class))
+  (op-spec :class ::regal/class))
 
 (defmethod op :not [_]
-  (op-spec ::regal/class))
+  (op-spec :not ::regal/class))
 
 (defmethod op :ctrl [_]
-  (op-spec (s/cat :char char?)))
+  (op-spec :ctrl (s/cat :char char?)))
 
 (defn- resolver [kw]
   (-> kw s/spec meta ::form))
@@ -123,6 +128,19 @@
       {::form regal})))
 
 (comment
+
+  (binding [s/*recursion-limit* 1]
+    (spec-gen/generate (s/gen ::regal/-op)))
+
+  (s/valid? ::regal/repeat-impl
+            (doto (spec-gen/generate (gen/fmap (fn [[form & minmax]]
+                                                 (into [:repeat form] (sort minmax)))
+                                               (gen/tuple form-gen gen/nat gen/nat)))
+              prn))
+
+  (s/valid? ::regal/repeat-impl [:repeat :word 2 2])
+
+  (s/valid? ::regal/op [:ctrl \u0230])
 
   (s/valid? :lambdaisland.regal/form [:cat [:+ "x"] "-" [:+ "y"]])
   ;; => true
