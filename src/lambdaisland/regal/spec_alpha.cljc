@@ -10,13 +10,32 @@
 ;;                                  :options (s/o)))
 
 (s/def ::regal/form
-  (s/or :literal ::regal/literal
-        :token   ::regal/token
-        :op      ::regal/op))
+  (s/with-gen
+    (s/or :literal ::regal/literal
+          :token   ::regal/token
+          :op      ::regal/op)
+    ;; Bit of a hack, we need to stop test.check from blowing up the stack by
+    ;; making sure these recursive forms at some point bottom out. At smaller
+    ;; sizes we emit token/literals which never recur, at larger size we reduce
+    ;; the size before recurring so that we bottom out at a predicatable depth.
+    (fn []
+      (gen/sized
+       (fn [size]
+         (cond
+           (< size 5)
+           (s/gen ::regal/token)
+           (< size 10)
+           (s/gen (s/or :literal ::regal/literal
+                        :token ::regal/token))
+           :else
+           (gen/resize
+            (dec (long (* size 3/4)))
+            (s/gen ::regal/op))))))))
 
 (s/def ::regal/literal
   (s/or :string ::non-blank-string
-        :char   char?))
+        :char   (s/with-gen char?
+                  (constantly gen/char-ascii))))
 
 (s/def ::non-blank-string
   (s/with-gen
@@ -26,7 +45,7 @@
       (gen/bind
        (gen/sized #(gen/choose 1 (inc %)))
        (fn [size]
-         gen/string)))))
+         (gen/fmap #(apply str %) (gen/vector gen/char-ascii size)))))))
 
 (s/def ::regal/token (->> regal/token->ir
                           methods
@@ -42,7 +61,6 @@
                      (into [t] (rest v)))))
 
 (s/def ::regal/op
-  ;; RECURSIVE, needs the fmap to turn the result of s/cat into a vector
   (s/with-gen (s/and vector? ::regal/-op)
     #(spec-gen/fmap vec (s/gen ::regal/-op))))
 
@@ -83,7 +101,6 @@
 (def form-gen (s/gen ::regal/form))
 
 (defmethod op :repeat [_]
-  ;; RECURSIVE, so that generated values already have (< min max)
   (s/with-gen
     ::regal/repeat-impl
     (fn []
@@ -95,16 +112,23 @@
                 (gen/tuple form-gen gen/nat gen/nat)))))
 
 (s/def ::single-character
-  (s/or :char char?
+  (s/or :char (s/with-gen char?
+                (constantly gen/char-ascii))
         :string (s/with-gen (s/and string? #(= (count %) 1))
-                  #(gen/fmap str gen/char))))
+                  #(gen/fmap str gen/char-ascii))))
+
+(s/def ::regal/range (s/with-gen (s/cat :from ::single-character
+                                        :to ::single-character)
+                       #(gen/tuple (s/gen ::single-character)
+                                   (s/gen ::single-character))))
 
 (s/def ::regal/class
-  (s/+ (s/or :char   char?
-             :range  (s/cat :from ::single-character
-                            :to ::single-character)
+  (s/+ (s/or :char   (s/with-gen char?
+                       (constantly gen/char-ascii))
+             :range  ::regal/range
              :string ::non-blank-string
              :token  ::regal/token)))
+
 
 (defmethod op :class [_]
   (op-spec :class ::regal/class))
@@ -118,7 +142,12 @@
 (defn- resolver [kw]
   (-> kw s/spec meta ::form))
 
-(defn spec [regal]
+(defn spec
+  "Turn a regal form into a clojure.spec.alpha spec
+
+     (s/def ::spaces (lambdaisland.regal.spec-alpha/spec [:+ :whitespace]))
+  "
+  [regal]
   (let [opts    {:resolver resolver}
         pattern (regal/regex regal opts)]
     (with-meta
@@ -128,6 +157,8 @@
       {::form regal})))
 
 (comment
+
+  (gen/generate (s/gen ::regal/form) 100)
 
   (binding [s/*recursion-limit* 1]
     (spec-gen/generate (s/gen ::regal/-op)))
