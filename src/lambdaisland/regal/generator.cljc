@@ -26,8 +26,16 @@
       (conj res prev)
       res)))
 
+(defn map-generator [rs opts]
+  (map-indexed (fn [idx r]
+                 (generator r (-> opts
+                                  (update ::initial? #(and % (= 0 idx)))
+                                  (update ::final? #(and % (= (count rs)
+                                                              (inc idx))))))) rs))
+
 (defmethod -generator :cat [[_ & rs] opts]
-  (apply gen/tuple (map #(generator % opts) (collapse-double-line-breaks rs))))
+  (apply gen/tuple (map-generator (collapse-double-line-breaks rs) opts)))
+
 
 (defmethod -generator :alt [[_ & rs] opts]
   (gen/one-of (map #(generator % opts) rs)))
@@ -55,7 +63,7 @@
   (platform/hex->int (subs h 2)))
 
 (def any-gen
-  (gen/such-that (complement #{\r \n}) gen/char))
+  (gen/such-that (complement #{\r \n \u0085}) gen/char))
 
 (def whitespace-gen
   (gen/fmap (comp char parse-hex) (gen/one-of (map gen/return regal/whitespace-chars))))
@@ -107,10 +115,16 @@
     non-whitespace-gen
 
     :start
-    (gen/return "")
+    (if (::initial? opts)
+      (gen/return "")
+      (throw (ex-info "Can't create generator, :start used in non-initial position."
+                      {:type ::impossible-regex})))
 
     :end
-    (gen/return "")
+    (if (::final? opts)
+      (gen/return "")
+      (throw (ex-info "Can't create generator, :end used in non-final position."
+                      {:type ::impossible-regex})))
 
     :newline
     (gen/return "\n")
@@ -245,7 +259,9 @@
   ([r]
    (gen r nil))
   ([r {:keys [resolver] :as opts}]
-   (gen/fmap grouped->str (generator r opts))))
+   (gen/fmap grouped->str (generator r (assoc opts
+                                              ::initial? true
+                                              ::final? true)))))
 
 (defn sample [r]
   (gen/sample (gen r)))

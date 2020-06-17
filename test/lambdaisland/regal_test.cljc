@@ -93,7 +93,7 @@
           (regal/with-flavor flavor
             (is (= pattern (regal/pattern form)))))
 
-        (when-not (:no-parse (meta case))
+        (when-not (some (comp :no-parse meta) [case cases])
           (testing (str "Pattern parses correctly (" (name id) ") " (pr-str pattern) " (" flavor ")")
             (regal/with-flavor flavor
               (is (= form (parse/parse-pattern pattern)))))))
