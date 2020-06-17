@@ -7,7 +7,7 @@ _Royally reified regular expressions_
 [![CircleCI](https://circleci.com/gh/lambdaisland/regal.svg?style=svg)](https://circleci.com/gh/lambdaisland/regal) [![cljdoc badge](https://cljdoc.org/badge/lambdaisland/regal)](https://cljdoc.org/d/lambdaisland/regal) [![Clojars Project](https://img.shields.io/clojars/v/lambdaisland/regal.svg)](https://clojars.org/lambdaisland/regal)
 <!-- /badges -->
 
-# tl;dr
+## tl;dr
 
 Regal lets you manipulate regular expressions as data, by providing a
 Hiccup-like regex syntax, and ways to convert between this Hiccup syntax (Regal
@@ -16,7 +16,7 @@ writing cross-platform code by providing consistent semantics across JS/Java
 runtimes, and it allows converting JavaScript regex to Java regex semantically
 (useful for e.g. dealing with JSON Schema in Clojure)
 
-# The slightly longer version
+## The slightly longer version
 
 Regal provides a syntax for writing regular expressions using plain Clojure
 data: vectors, keywords, strings. This is known as Regal notation.
@@ -35,12 +35,31 @@ can do things like converting a JavaScript regex pattern to one that is suitable
 for Java's regex engine.
 
 <!-- opencollective -->
-### Support Lambda Island Open Source
+## Support Lambda Island Open Source
 
 Regal is part of a growing collection of quality Clojure libraries and
 tools released on the Lambda Island label. If you find value in our work please
 consider [becoming a backer on Open Collective](http://opencollective.com/lambda-island#section-contribute)
 <!-- /opencollective -->
+
+## Project status
+
+Regal is alpha level software, this does not mean it is of low quality or not
+fit for use, it does mean that future breakage of the API is still possible.
+
+The following aspects of the library are generally well tested and developed,
+and we intend to retain compatibility as much as practically possible.
+
+- Regal syntax as described in this README
+- Generating regex patterns from regal forms
+- Parsing regex patterns to regal forms
+
+The following aspects have known issues or are otherwise untested or incomplete,
+and you can expect them to change significantly as we further develop them:
+
+- Creating test.check generators from regal forms
+- clojure.spec-alpha integration
+- Malli integration
 
 ## Installation
 

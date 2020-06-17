@@ -4,6 +4,7 @@
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
             [lambdaisland.regal :as regal]
+            [lambdaisland.regal.generator :as generator]
             [lambdaisland.regal.parse :as parse]
             [lambdaisland.regal.spec-alpha :as rs]
             [lambdaisland.regal.platform :as platform]))
@@ -28,6 +29,30 @@
      (regal/regex regal)
      (catch Exception _
        false))))
+
+(check/quick-check
+ 100
+ (prop/for-all [form (s/gen ::regal/form)]
+   (try
+     (let [regex (regal/regex form)
+           gen (generator/gen form)
+           samples (gen/sample gen 100)
+           unmatched (remove #(re-find regex %) samples)]
+       (if (seq unmatched)
+         (prn {:form form :unmatched unmatched})
+         true))
+     (catch clojure.lang.ExceptionInfo e
+       (prn form)
+       true))))
+
+
+(generator/gen [:cat [:cat :start "x" :end] ""])
+
+[:+ "jcP5h" "W2,9" :null :non-word :start]
+
+(re-find (regal/regex :any) "\n")
+
+(+ (* 2 8 8) 5)
 
 (round-trip? [:cat "   " [:class "&& "]])
 
