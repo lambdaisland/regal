@@ -201,10 +201,8 @@
 (def whitespace-equivalent (into [:class] whitespace-chars))
 (def neg-whitespace-equivalent (into [:not] whitespace-chars))
 
-#_
-(def non-whitespace-ranges-equivalent
-  [:class
-   [:null [:char 8]]
+(def non-whitespace-ranges
+  [[[:char 0] [:char 8]]
    [[:char 14] [:char 31]]
    [[:char 33] [:char 159]]
    [[:char 161] [:char 5759]]
@@ -235,16 +233,21 @@
       1 (first cats)
       (into [:cat] cats))))
 
+(defn conj-form [f1 f2]
+  (if (regal/tagged-form? :cat f2)
+    (into f1 (next f2))
+    (conj f1 f2)))
+
 (defmethod transform [:SuffixedExpr :common] [[_ expr suffix :as x]]
   (if suffix
     (let [[_SuffixedExp [suffix-type curly-min _ curly-max]] suffix
           form (case suffix-type
                  :Optional
-                 [:? (transform expr)]
+                 (conj-form [:?] (transform expr))
                  :Positive
-                 [:+ (transform expr)]
+                 (conj-form [:+] (transform expr))
                  :NonNegative
-                 [:* (transform expr)]
+                 (conj-form [:*] (transform expr))
                  :CurlyRepetition
                  (if curly-max
                    [:repeat
@@ -257,7 +260,7 @@
     (transform expr)))
 
 (defmethod transform [:ControlChar :common] [[_ [ch]]]
-  [:ctrl ch])
+  [:ctrl (str ch)])
 
 (defn transform-normal-slached-characters [[_ [_ ch] :as x]]
   (case ch
@@ -319,10 +322,7 @@
     [::not-implemented (pr-str ch) x]))
 
 (defmethod transform [:ShortHexChar :java] [[_ x]]
-  (case x
-    "00"
-    :null
-    "0B"
+  (if(= "0B" x)
     :vertical-tab
     [:char (platform/hex->int x)]))
 
@@ -359,7 +359,8 @@
       :non-whitespace
       :else
       (-> result
-          (subvec-replace whitespace-chars [:whitespace])))))
+          (subvec-replace whitespace-chars [:whitespace])
+          (subvec-replace non-whitespace-ranges [:non-whitespace])))))
 
 (defmethod transform [:BCCUnionLeft :ecma] [x]
   (let [result (tranform-bcc-union-left x)]
@@ -403,7 +404,7 @@
         :non-capturing-group
         form
         [type form]))
-    [:capture (transform x)]))
+    (conj-form [:capture] (transform x))))
 
 (defn parse-pattern [pattern]
   (->> pattern

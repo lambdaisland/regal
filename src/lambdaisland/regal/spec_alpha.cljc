@@ -29,7 +29,7 @@
                         :token ::regal/token))
            :else
            (gen/resize
-            (dec (long (* size 3/4)))
+            (dec (long (/ size 2)))
             (s/gen ::regal/op))))))))
 
 (s/def ::regal/literal
@@ -47,12 +47,17 @@
        (fn [size]
          (gen/fmap #(apply str %) (gen/vector gen/char-ascii size)))))))
 
-(s/def ::regal/token (->> regal/token->ir
-                          methods
-                          keys
-                          (filter vector?)
-                          (map first)
-                          set))
+(def known-tokens (->> regal/token->ir
+                       methods
+                       keys
+                       (filter vector?)
+                       (map first)
+                       set))
+
+(s/def ::regal/token known-tokens)
+
+;; Tokens allowed in a :class/:not context
+(s/def ::regal/class-token (disj known-tokens :start :end :line-break :any))
 
 (defmulti op first)
 
@@ -112,14 +117,16 @@
                 (gen/tuple form-gen gen/nat gen/nat)))))
 
 (s/def ::single-character
-  (s/or :char (s/with-gen char?
-                (constantly gen/char-ascii))
-        :string (s/with-gen (s/and string? #(= (count %) 1))
-                  #(gen/fmap str gen/char-ascii))))
+  (s/and (s/or :char (s/with-gen char?
+                       (constantly gen/char-ascii))
+               :string (s/with-gen (s/and string? #(= (count %) 1))
+                         #(gen/fmap str gen/char-ascii)))
+         (s/conformer (fn [[_ s]] s))))
+
 
 (s/def ::regal/range (s/with-gen (s/and (s/cat :from ::single-character
                                                :to ::single-character)
-                                        (fn [{:keys [from to]}]
+                                        (fn [{:keys [to from]}]
                                           (< (platform/char->long from)
                                              (platform/char->long to))))
                        (constantly
@@ -134,7 +141,7 @@
                        (constantly gen/char-ascii))
              :range  ::regal/range
              :string ::non-blank-string
-             :token  ::regal/token)))
+             :token  ::regal/class-token)))
 
 (defmethod op :class [_]
   (op-spec :class ::regal/class))
@@ -144,7 +151,7 @@
 
 (defmethod op :ctrl [_]
   (op-spec :ctrl (s/cat :char (s/with-gen
-                                (s/and char?
+                                (s/and ::single-character
                                        #(<= (platform/char->long \A)
                                             (platform/char->long %)
                                             (platform/char->long \Z)))

@@ -117,10 +117,11 @@
   ["\u2029" nil]]
 
  :control
- [[:ctrl \A] "\\cA" ["\u0001" "\u0001"]]
- [[:ctrl \J] "\\cJ" ["\n" "\n"]]
+ [[:ctrl "A"] "\\cA" ["\u0001" "\u0001"]]
+ [[:ctrl "J"] "\\cJ" ["\n" "\n"]]
 
  :null
+ ^:no-parse
  [:null {:java "\\x00" :ecma "\\0"}
   ["\u0000" "\u0000"]
   ["\u0001" nil]]
@@ -156,10 +157,10 @@
  [[:class "^]"] "[\\^\\]]" ["^" "^"] ["]" "]"]]
 
  :range
- [[:class [\a \z] [\A \Z] [\0 \9]] "[a-zA-Z0-9]" ["a" "a"] ["Z" "Z"] ["5" "5"]]
+ [[:class ["a" "z"] ["A" "Z"] ["0" "9"]] "[a-zA-Z0-9]" ["a" "a"] ["Z" "Z"] ["5" "5"]]
 
  :negated-bcc
- [[:not [\a \d]] "[^a-d]" ["e" "e"] ["b" nil]]
+ [[:not ["a" "d"]] "[^a-d]" ["e" "e"] ["b" nil]]
 
  :bcc-opening-bracket
  [[:class "["] "[\\[]" ["[" "["]]
@@ -207,4 +208,6 @@
  ;; Capturing groups
  ;; Special groups (Lookahead)
  ;; Modifiers
+ ;; lazy vs eager ? / ?? ; * / *?
+ ;; character class union / intersection / subtraction
  ]

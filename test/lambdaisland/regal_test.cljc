@@ -35,10 +35,10 @@
   (is (= "a?"
          (regal/pattern [:? "a"])))
 
-  (is (= "[a-z0-9_-]"
+  (is (= "[a-z0-9_\\-]"
          (regal/pattern [:class [\a \z] [\0 \9] \_ \-])))
 
-  (is (= "[^a-z0-9_-]"
+  (is (= "[^a-z0-9_\\-]"
          (regal/pattern [:not [\a \z] [\0 \9] \_ \-])))
 
   (is (= "a{3,5}"
@@ -49,7 +49,7 @@
            (regal/pattern [:cat :start \a :end]))))
 
   (regal/with-flavor :java
-    (is (= "\\Aa\\z"
+    (is (= "^a$"
            (regal/pattern [:cat :start \a :end]))))
 
   (is (= "a(?:b|c)"

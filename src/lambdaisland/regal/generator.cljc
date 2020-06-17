@@ -46,15 +46,6 @@
   (gen/one-of [(gen/return "")
                (generator (into [:cat] rs) opts)]))
 
-(defn- char-code [s]
-  #?(:clj
-     (cond
-       (string? s) (.charCodeAt ^String s 0)
-       (char? s)   (platform/char->long s)
-       :else       (assert false s))
-     :cljs
-     (.charCodeAt s 0)))
-
 (defn parse-hex
   "
   \"\\xFF\" => 255
@@ -160,7 +151,7 @@
   (gen/one-of (for [c cs]
                 (cond
                   (vector? c)
-                  (gen/fmap char (gen/choose (char-code (first c)) (char-code (second c))))
+                  (gen/fmap char (gen/choose (platform/char->long (first c)) (platform/char->long (second c))))
 
                   (simple-keyword? c)
                   (token-gen c opts)

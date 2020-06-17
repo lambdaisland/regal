@@ -59,29 +59,6 @@
   ;; in clj vs cljs, this may be a ClojureScript bug
   (str/replace s #"([.*+?^${}()|\[\]\\])" #?(:clj "\\\\$1" :cljs "\\$1")))
 
-(defn regex-pattern
-  "Regex to string, remove the slashes that JavaScript likes to add. This will
-  drop any regex modifiers."
-  [r]
-  #?(:clj (str r)
-     :cljs (let [s (str r)
-                 ;; there may be modifiers after the last slash
-                 len (.lastIndexOf s "/")]
-             (-> s
-                 (.substring 1 len)
-                 ;; Undo escaping of forward slashes, in JS this is necessary to
-                 ;; distinguish them from regex boundaries, but for us they are
-                 ;; irrelevant
-                 (str/replace "\\/" "/")))))
-
-(defn compile
-  "Compile a regex pattern (string) to a regex."
-  [s]
-  #?(:clj
-     (Pattern/compile s)
-     :cljs
-     (js/RegExp. s)))
-
 ;; IR = Intermediate Representation
 ;;
 ;; Instead of going directly from Regal Expression to regex pattern we first
@@ -255,10 +232,21 @@
         ;; This forces explicit grouping for multi-character string
         ;; literals so that e.g. [:* "ab"] compiles to #"(?:ab)*"
         ;; rather than #"ab*".
-        rsg (if (or (seq? rsg) (single-character? rsg))
+        rsg (cond
+              (seq? rsg)
+              (if (::quantifier (meta rsg))
+                ;; force an extra non-capturing group to avoid stacking multiple
+                ;; quantifiers, since some combinations like ?? or *? which mean
+                ;; something different
+                (vary-meta rsg dissoc ::grouped)
+                rsg)
+              ;; single characters don't need grouping
+              (single-character? rsg)
               rsg
+              :else
+              ;; multi-character strings, add non-capturing group
               (list rsg))]
-    `^::grouped (~rsg ~q)))
+    `^::grouped ^::quantifier (~rsg ~q)))
 
 (defmethod -regal->ir [:* :common] [[_ & rs] opts]
   (quantifier->ir \* rs opts))
@@ -273,19 +261,25 @@
   (quantifier->ir `^::grouped (\{ ~@(interpose \, (map str ns)) \}) [r] opts))
 
 (defn char-class-escape [ch]
-  (case ch
-    \^
-    "\\^"
-    \]
-    "\\]"
-    ;; unescaped opening brackets are in fact allowed inside character classes.
-    ;; In JavaScript this allows nesting, in Java it matches a literal opening
-    ;; bracket. Escaped it works the same on both.
-    \[
-    "\\["
-    \\
-    "\\\\"
-    ch))
+  (let [ch #?(:clj (if (string? ch) (first ch) ch)
+              :cljs ch)]
+    (case ch
+      \^
+      "\\^"
+      \]
+      "\\]"
+      ;; unescaped opening brackets are in fact allowed inside character classes.
+      ;; In JavaScript this allows nesting, in Java it matches a literal opening
+      ;; bracket. Escaped it works the same on both.
+      \[
+      "\\["
+      \\
+      "\\\\"
+      \-
+      "\\-"
+      \&
+      "\\&"
+      ch)))
 
 (defn- compile-class [cs]
   (reduce (fn [r c]
@@ -299,7 +293,10 @@
               (vector? c)
               (if (#{:char :ctrl} (first c))
                 (conj r (regal->ir c {}))
-                (conj r (first c) \- (second c)))
+                (conj r
+                      (char-class-escape (first c))
+                      \-
+                      (char-class-escape (second c))))
 
               (keyword? c)
               (conj r (token->ir c))))
@@ -409,6 +406,111 @@
 
 (defn- grouped->str [g]
   (apply str (map grouped->str* g)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Normalization
+
+(defn tagged-form?
+  "Is the given `form` a vector with the given `tag` as first element?"
+  [tag form]
+  (and (vector? form)
+       (= tag (first form))))
+
+(defn- join-strings [v]
+  (reduce (fn [v e]
+            (if (and (string? (last v)) (string? e))
+              (update v (dec (count v)) str e)
+              (conj v e)))
+          [] v))
+
+(defn- splice-cats [[tag & forms :as form]]
+  (if (and (not= :repeat tag)
+           (some (partial tagged-form? :cat) forms))
+    (reduce (fn [acc f]
+              (if (tagged-form? :cat f)
+                (into acc (next f))
+                (conj acc f)))
+            [tag]
+            forms)
+    form))
+
+(defn normalize
+  "Returns a canonical, normalized version of a Regal form. Normalization is
+  idempotent. This function is mostly here to allow us to do property-based
+  testing on Regal itself, in particular we guarantee that for normalized form
+  compiling to regex, then parsing again returns the same form. Might be useful
+  for some other cases, e.g. if you want to memoize compiled regexes.
+
+  Parsing generally returns canonical (normalized) forms, so there is no need to
+  normalize the result of [[lambdaisland.regal.parse/parse]].
+
+  - Turns characters into strings (Java)
+  - removes unnecessary `[:cat ...]` groupings
+  - removes single element `[:alt ...]` grouping
+  - join consecutive strings
+  - remove `[:class ...]` groups that only wrap a single character or token (keyword)
+  - replace `:null` with `[:char 0]`
+  - replace `[:not :whitespace]` with `:non-whitespace`"
+  [form]
+  (cond
+    (= [:not :whitespace])
+    :non-whitespace
+
+    (= :null form)
+    [:char 0]
+
+    (vector? form)
+    (cond
+      ;; [:cat "x"] => "x"
+      (and (or (tagged-form? :cat form)
+               (tagged-form? :alt form))
+           (= 2 (count form)) )
+      (recur (second form))
+
+      ;; [:class "x"] => "x"
+      (and (tagged-form? :class form)
+           (= 2 (count form))
+           (or (keyword? (second form))
+               (single-character? (second form))))
+      (recur (second form))
+
+      (keyword? (first form))
+      (let [form' (-> normalize (mapv form) join-strings splice-cats)]
+        (if (not= form' form)
+          (recur form')
+          form))
+
+      :else
+      (mapv normalize form))
+
+    (char? form)
+    (str form)
+
+    :else
+    form))
+
+(defn regex-pattern
+  "Regex to string, remove the slashes that JavaScript likes to add. This will
+  drop any regex modifiers."
+  [r]
+  #?(:clj (str r)
+     :cljs (let [s (str r)
+                 ;; there may be modifiers after the last slash
+                 len (.lastIndexOf s "/")]
+             (-> s
+                 (.substring 1 len)
+                 ;; Undo escaping of forward slashes, in JS this is necessary to
+                 ;; distinguish them from regex boundaries, but for us they are
+                 ;; irrelevant
+                 (str/replace "\\/" "/")))))
+
+(defn compile
+  "Compile a regex pattern (string) to a regex."
+  [s]
+  #?(:clj
+     (Pattern/compile s)
+     :cljs
+     (js/RegExp. s)))
 
 (defn pattern
   "Convert a Regal form to a regex pattern as a string."

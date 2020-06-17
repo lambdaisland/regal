@@ -1,23 +1,37 @@
 (ns lambdaisland.regal.spec-gen-test
-  (:require [lambdaisland.regal.spec-alpha]
-            [lambdaisland.regal :as regal]
+  (:require [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as spec-gen]
+            [clojure.test :refer [deftest is are testing run-tests]]
+            [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
-            [clojure.test.check.clojure-test :refer [defspec]]
-            [clojure.spec.alpha :as s]
-            [clojure.spec.gen.alpha :as spec-gen]))
+            [lambdaisland.regal :as regal]
+            [lambdaisland.regal.parse :as parse]
+            [lambdaisland.regal.spec-alpha]))
 
-(comment
-  (defspec generated-forms-can-be-converted
-    (prop/for-all [regal (s/gen ::regal/form)]
-      ;; test that generators generate valid regexes
-      (try
-        (prn regal)
-        (regal/regex regal)
-        (catch Exception _
-          false))))
+(def form-gen (s/gen ::regal/form))
+(def canonical-form-gen (gen/fmap regal/normalize (s/gen ::regal/form)))
 
-  (test #'generated-forms-can-be-converted)
+(defspec generated-forms-can-be-converted 100
+  (prop/for-all [regal form-gen]
+    (try
+      (regal/regex regal)
+      (catch Exception _
+        false))))
 
-  ;; overflows easily
-  (binding [s/*recursion-limit* 3] (gen/generate (s/gen ::regal/form))))
+(defn- round-trip? [form]
+  (= form (parse/parse (regal/regex form))))
+
+(defspec round-trip-property 100
+  (prop/for-all* [canonical-form-gen] round-trip?))
+
+(deftest round-trip-test
+  (is (round-trip? [:cat "   " [:class "&& "]]))
+  (is (round-trip? [:class " " [" " "["]]))
+  (is (round-trip? [:ctrl "A"]))
+  (is (round-trip? [:class "   - "]))
+  (is (round-trip? [:alt "  " [:capture " " :escape]]))
+  (is (round-trip? :whitespace))
+  (is (round-trip? [:? [:? "x"]]))
+  (is (round-trip? [:cat "  " [:class " " :non-whitespace]]))
+  (is (round-trip? [:cat "-" [:repeat [:repeat "x" 0] 0]])))

@@ -10,6 +10,7 @@
 - `[:atomic ...]` atomic groups (prevent backtracking)
 - Parsing of `\w \W \d \D \s \S`
 - Parsing of suffixed expressions `+ * ? {1,2}`
+- `lambdaisland.regal.normalize` for getting a canonicalized version of a regal form
 
 ## Fixed
 
@@ -24,6 +25,7 @@
 - Drop `[:range from to]`, instead use `[:class [from to]]`
 - Using `:whitespace` inside `[:class ...]` or `[:not ...]` will throw an
   AssertionError, since we can't support it across platforms
+- The parser returns canonical forms, meaning single-character strings instead of characters
 
 # 2020-02-28 (9a40397ba)
 
