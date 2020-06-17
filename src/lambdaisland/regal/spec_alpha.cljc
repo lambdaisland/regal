@@ -1,10 +1,10 @@
 (ns lambdaisland.regal.spec-alpha
-  (:require [lambdaisland.regal :as regal]
-            [lambdaisland.regal.generator :as generator]
-            [clojure.test.check.generators :as gen]
-            [clojure.spec.alpha :as s]
+  (:require [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as spec-gen]
-            [clojure.string :as str]))
+            [clojure.test.check.generators :as gen]
+            [lambdaisland.regal :as regal]
+            [lambdaisland.regal.generator :as generator]
+            [lambdaisland.regal.platform :as platform]))
 
 ;; (s/fdef regal/regex :args (s/cat :form ::regal/form
 ;;                                  :options (s/o)))
@@ -117,10 +117,17 @@
         :string (s/with-gen (s/and string? #(= (count %) 1))
                   #(gen/fmap str gen/char-ascii))))
 
-(s/def ::regal/range (s/with-gen (s/cat :from ::single-character
-                                        :to ::single-character)
-                       #(gen/tuple (s/gen ::single-character)
-                                   (s/gen ::single-character))))
+(s/def ::regal/range (s/with-gen (s/and (s/cat :from ::single-character
+                                               :to ::single-character)
+                                        (fn [{:keys [from to]}]
+                                          (< (platform/char->long from)
+                                             (platform/char->long to))))
+                       (constantly
+                        (gen/fmap (fn [chs]
+                                    (vec (sort-by platform/char->long chs)))
+                                  (gen/tuple (s/gen ::single-character)
+                                             (s/gen ::single-character))))))
+
 
 (s/def ::regal/class
   (s/+ (s/or :char   (s/with-gen char?
@@ -129,7 +136,6 @@
              :string ::non-blank-string
              :token  ::regal/token)))
 
-
 (defmethod op :class [_]
   (op-spec :class ::regal/class))
 
@@ -137,7 +143,14 @@
   (op-spec :not ::regal/class))
 
 (defmethod op :ctrl [_]
-  (op-spec :ctrl (s/cat :char char?)))
+  (op-spec :ctrl (s/cat :char (s/with-gen
+                                (s/and char?
+                                       #(<= (platform/char->long \A)
+                                            (platform/char->long %)
+                                            (platform/char->long \Z)))
+                                (constantly
+                                 (gen/fmap char (gen/choose (platform/char->long \A)
+                                                            (platform/char->long \Z))))))))
 
 (defn- resolver [kw]
   (-> kw s/spec meta ::form))

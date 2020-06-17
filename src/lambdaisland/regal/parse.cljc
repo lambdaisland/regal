@@ -89,6 +89,18 @@
       ([acc x]
        (process acc x)))))
 
+(defn subvec-replace [s pat repl]
+  (let [cnt (count pat)]
+    (loop [s s
+           acc []]
+      (cond
+        (< (count s) cnt)
+        (into acc s)
+        (= pat (take cnt s))
+        (recur (drop cnt s) (into acc repl))
+        :else
+        (recur (next s) (conj acc (first s)))))))
+
 (defmulti transform (fn [tree] [(cond
                                   (vector? tree) (first tree)
                                   (string? tree) :string
@@ -338,17 +350,16 @@
 
 (defmethod transform [:BCCUnionLeft :java] [x]
   (let [result (tranform-bcc-union-left x)]
+    ;; Some special case handling to make sure we round-trip expansions
+    ;; of :whitespace
     (cond
       (= result whitespace-equivalent)
       :whitespace
       (= result neg-whitespace-equivalent)
       :non-whitespace
-      ;; We're overfitting our test cases here, gonna leave this for now. This
-      ;; means we don't correctly round-trip this case.
-      ;; (= result non-whitespace-ranges-equivalent)
-      ;; [:class :non-whitespace]
       :else
-      result)))
+      (-> result
+          (subvec-replace whitespace-chars [:whitespace])))))
 
 (defmethod transform [:BCCUnionLeft :ecma] [x]
   (let [result (tranform-bcc-union-left x)]
@@ -367,8 +378,8 @@
 (defmethod transform [:BCCRange :common] [[_ x y]]
   (let [from (transform x)
         to   (transform y)]
-    [(if (string? from) (first from) from)
-     (if (string? to) (first to) to)]))
+    [(if (char? from) (str from) from)
+     (if (char? to) (str to) to)]))
 
 (defmethod transform [:GroupFlags :common] [[_ g :as x]]
   (case (first g)

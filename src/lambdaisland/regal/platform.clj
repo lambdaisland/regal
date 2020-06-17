@@ -9,7 +9,9 @@
    (Integer/toHexString i)))
 
 (defn char->long [ch]
-  (long ch))
+  (if (string? ch)
+    (long (first ch))
+    (long ch)))
 
 (defn parse-int [i]
   (Long/parseLong i 10))

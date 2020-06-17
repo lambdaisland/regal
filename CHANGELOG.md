@@ -22,6 +22,8 @@
 ## Changed
 
 - Drop `[:range from to]`, instead use `[:class [from to]]`
+- Using `:whitespace` inside `[:class ...]` or `[:not ...]` will throw an
+  AssertionError, since we can't support it across platforms
 
 # 2020-02-28 (9a40397ba)
 

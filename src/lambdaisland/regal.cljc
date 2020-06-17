@@ -159,20 +159,23 @@
 (defmethod token->ir [:tab :common] [_] "\\t")
 (defmethod token->ir [:form-feed :common] [_] "\\f")
 
-(defmethod token->ir [:line-break :java8] [_] "\\R")
+(defn assert-line-break-not-in-class []
+  ;; Java does not allow #"[\R]", and emulating the behaviour of \R inside a
+  ;; class is not possible either, so we don't support it.
+  (when *character-class*
+    (throw (java.lang.UnsupportedOperationException. ":line-break can not be used inside [:class] or [:not]"))))
+
+(defmethod token->ir [:line-break :java8] [_]
+  (assert-line-break-not-in-class)
+  "\\R")
 
 (defmethod token->ir [:line-break :java9] [_]
-  (if *character-class*
-    ;; we can't emulate the atomic behavior
-    ;; of :line-break when used inside a character
-    ;; class
-    "\\R"
-    "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"))
+  (assert-line-break-not-in-class)
+  "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])")
 
 (defmethod token->ir [:line-break :ecma] [_]
-  (if *character-class*
-    "\\R"
-    "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"))
+  (assert-line-break-not-in-class)
+  "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])")
 
 (defmethod token->ir [:alert :java] [_] "\\a")
 (defmethod token->ir [:alert :ecma] [_] "\\x07")
@@ -308,7 +311,8 @@
     `^::grouped (\[ ~@(compile-class cs) \])))
 
 (defmethod -regal->ir [:not :common] [[_ & cs] opts]
-  `^::grouped (\[ \^ ~@(compile-class cs) \]))
+  (binding [*character-class* true]
+    `^::grouped (\[ \^ ~@(compile-class cs) \])))
 
 (defmethod -regal->ir [:capture :common] [[_ & rs] opts]
   `^::grouped (\( ~@(regal->ir (into [:cat] rs) opts) \)))
