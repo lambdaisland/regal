@@ -1,6 +1,5 @@
 {:paths ["src" "test" "resources"]
- :deps  {org.clojure/clojure {:mvn/version "1.10.1"}
-         instaparse          {:mvn/version "1.4.10"}}
+ :deps  {}
 
  :aliases
  {:dev
@@ -15,7 +14,7 @@
                                          :sha     "2f84e3a37cab76d44c58785ff4481597429bc1d3"}}}
 
   :instaparse
-  {:extra-deps {}}
+  {:extra-deps {instaparse          {:mvn/version "1.4.10" }}}
 
   :test-check
   {:extra-deps {org.clojure/test.check {:mvn/version "1.1.0"}}}
@@ -24,8 +23,9 @@
   {:extra-deps {com.gfredericks/test.chuck {:mvn/version "0.2.10"}}}
 
   :malli
-  {:extra-deps {metosin/malli {:git/url "https://github.com/metosin/malli"
-                               :sha     "40ad376abe6d8edd25e52156e38f5ddfd3103a75"}}}
+  {:extra-deps {metosin/malli {:mvn/version "0.0.1-SNAPSHOT"}
+                #_{:git/url "https://github.com/metosin/malli"
+                   :sha     "40ad376abe6d8edd25e52156e38f5ddfd3103a75"}}}
 
   :cljs
   {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.773"}}}

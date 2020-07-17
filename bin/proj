@@ -5,7 +5,11 @@
 (lioss/main
  {:license        :mpl
   :inception-year 2019
-  :description    "A Regex Swiss Army Knife"})
+  :description    "A Regex Swiss Army Knife"
+  :aliases-as-scope-provided [:spec-alpha
+                              :malli
+                              :test-check
+                              :instaparse]})
 
 
 ;; Local Variables:
