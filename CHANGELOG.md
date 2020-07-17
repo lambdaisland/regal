@@ -10,14 +10,6 @@
 
 ## Added
 
-## Fixed
-
-## Changed
-
-# 0.0.76 (2020-07-17 / acb9496)
-
-## Added
-
 - `[:char ...]` for code point literal
 - `[:ctrl ...]` for control character literals
 - `:line-break`, `:alert`, `:escape`, `:vertical-whitespace`, `:vertical-tab`
@@ -43,6 +35,6 @@
   AssertionError, since we can't support it across platforms
 - The parser returns canonical forms, meaning single-character strings instead of characters
 
-# 2020-02-28 (9a40397ba)
+# 0.0.0 (2020-02-28 / 9a40397ba)
 
-Initial version of Regal as presented at ClojureD.
+Initial version of Regal as presented at ClojureD. Not officially released.
