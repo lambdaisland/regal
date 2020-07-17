@@ -66,13 +66,13 @@ and you can expect them to change significantly as we further develop them:
 deps.edn
 
 ``` clojure
-lambdaisland/regal {:mvn/version "0.0"}
+lambdaisland/regal {:mvn/version "0.0.76"}
 ```
 
 project.clj
 
 ``` clojure
-[lambdaisland/regal "0.0"]
+[lambdaisland/regal "0.0.76"]
 ```
 
 ### An example
