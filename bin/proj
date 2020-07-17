@@ -1,0 +1,13 @@
+#!bin/bb
+
+(ns proj (:require [lioss.main :as lioss]))
+
+(lioss/main
+ {:license        :mpl
+  :inception-year 2019
+  :description    "A Regex Swiss Army Knife"})
+
+
+;; Local Variables:
+;; mode:clojure
+;; End:
