@@ -264,6 +264,39 @@ mapping namespaced keywords to Regal expressions.
 ;;     "*xxx-yyyy*")
 ```
 
+### Use with Malli
+
+```clojure
+(require '[malli.core :as m]
+         '[malli.error :as me]
+         '[malli.generator :as mg]
+         '[lambdaisland.regal.malli :as regal-malli])
+
+(def malli-opts {:registry {:regal regal-malli/regal-schema}})
+
+(def form [:+ "y"])
+
+(def schema (m/schema [:regal form] malli-opts))
+
+(m/form schema)
+;; => [:regal [:+ "y"]]
+
+(m/type schema)
+;; => :regal
+
+(m/validate schema "yyy")
+;; => true
+
+(me/humanize (m/explain schema "xxx"))
+;; => ["unknown error"]
+
+(me/humanize (m/explain schema "xxx") {:errors {:regal {:error/message {:en "Pattern does not match"}}}})
+;; => ["Pattern does not match"]
+
+(mg/sample schema)
+;; => ("y" "yy" "yy" "yyyy" "yyyy" "y" "yyy" "yyyyy" "yyyyyyyyy" "yyyyyyyy")
+```
+
 ### BYO test.check / spec-alpha
 
 Regal does not declare any dependencies. This lets people who only care about

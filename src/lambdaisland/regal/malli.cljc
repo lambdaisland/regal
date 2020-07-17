@@ -1,62 +1,73 @@
 (ns lambdaisland.regal.malli
   (:require [lambdaisland.regal :as regal]
-            [malli.core :as m]))
+            [lambdaisland.regal.generator :as generator]
+            [malli.core :as m]
+            [malli.generator :as mg]))
 
-(defn- -regal-schema []
+(def regal-schema
   ^{:type ::into-schema}
   (reify m/IntoSchema
-    (-into-schema [_ properties children options]
+    (-into-schema [_ properties [regal :as children] options]
       (when-not (= 1 (count children))
-        (m/fail! ::child-error {:name :vector, :properties properties, :children children, :min 1, :max 1}))
+        (m/fail! ::child-error {:type :regal, :properties properties, :children children, :min 1, :max 1}))
       (let [form (m/create-form :regal properties children)
-            ]
+            regex (regal/regex regal)]
         ^{:type ::schema}
-        (reify m/Schema
-          (-name [_] :regal)
+        (reify
+          m/Schema
+          (-type [_] :regal)
           (-validator [_]
-            )
+            (fn [x] (try (boolean (re-find regex x)) (catch #?(:clj Exception, :cljs js/Error) _ false))))
           (-explainer [this path]
-            #_(fn explain [x in acc]
-                (if-not (or (nil? x) (validator' x)) (conj acc (error path in this x)) acc)))
+            (fn [x in acc]
+              (try
+                (if-not (re-find regex x)
+                  (conj acc (m/error path in this x))
+                  acc)
+                (catch #?(:clj Exception, :cljs js/Error) e
+                  (conj acc (m/error path in this x (:type (ex-data e))))))))
           (-transformer [this transformer method options]
-            #_(let [this-transformer (-value-transformer transformer this method options)
-                    child-transformer (-transformer schema' transformer method options)
-                    build (fn [phase]
-                            (let [->this (phase this-transformer)
-                                  ->child (phase child-transformer)]
-                              (if (and ->this ->child)
-                                (comp ->child ->this)
-                                (or ->this ->child))))]
-                {:enter (build :enter)
-                 :leave (build :leave)}))
-          (-accept [this visitor options] #_(visitor this [(m/-accept schema' visitor options)] options))
+            (m/-value-transformer transformer this method options))
+
+          (-walk [this walker in options]
+            (when (m/-accept walker this in options)
+              (m/-outer walker this (vec children) in options)))
           (-properties [_] properties)
           (-options [_] options)
+          (-children [_] children)
           (-form [_] form)
-          #_LensSchema
-          #_(-get [_ key default] (if (= 0 key) schema' default))
-          #_(-set [_ key value] (if (= 0 key) (into-schema :maybe properties [value]) schema')))))))
 
-(def into-schema
-  (#'m/-leaf-schema
-   :regal
-   (fn [properties children _]
-     (when-not (= 1 (count children))
-       (m/fail! ::child-error {:name :vector, :properties properties, :children children, :min 1, :max 1}))
-     (let [regal-expr (first children)
-           regex (regal/regex regal-expr)]
-       [(fn [s]
-          (and (string? s)
-               (re-find regex s)))
-        children]))))
-
-(def registry
-  {:regal into-schema})
+          mg/Generator
+          (-generator [this options]
+            (generator/gen regal)))))))
 
 (comment
   (require '[malli.core :as m]
+           '[malli.error :as me]
+           '[malli.generator :as mg]
            '[lambdaisland.regal.malli :as regal-malli])
 
-  (m/validate [:regal [:+ "x"]] "xxx" {:registry regal-malli/registry})
-  ;;=> "xxx"
+  (def malli-opts {:registry {:regal regal-malli/regal-schema}})
+
+  (def form [:+ "y"])
+
+  (def schema (m/schema [:regal form] malli-opts))
+
+  (m/form schema)
+  ;; => [:regal [:+ "y"]]
+
+  (m/type schema)
+  ;; => :regal
+
+  (m/validate schema "yyy")
+  ;; => true
+
+  (me/humanize (m/explain schema "xxx"))
+  ;; => ["unknown error"]
+
+  (me/humanize (m/explain schema "xxx") {:errors {:regal {:error/message {:en "Pattern does not match"}}}})
+  ;; => ["Pattern does not match"]
+
+  (mg/sample schema)
+  ;; => ("y" "yy" "yy" "yyyy" "yyyy" "y" "yyy" "yyyyy" "yyyyyyyyy" "yyyyyyyy")
   )

@@ -7,33 +7,34 @@
   {}
 
   :spec-alpha
-  {:extra-deps {org.clojure/spec.alpha {:mvn/version "0.2.176"}
-                expound                {:mvn/version "0.8.4"}}}
+  {:extra-deps {org.clojure/spec.alpha {:mvn/version "0.2.187"}
+                expound                {:mvn/version "0.8.5"}}}
 
   :spec-alpha2
   {:extra-deps {org.clojure/spec-alpha2 {:git/url "https://github.com/clojure/spec-alpha2.git"
-                                         :sha     "de38650874c6f0bc19e7755feab4d65b3fffb268"}}}
+                                         :sha     "2f84e3a37cab76d44c58785ff4481597429bc1d3"}}}
 
   :instaparse
   {:extra-deps {}}
 
   :test-check
-  {:extra-deps {org.clojure/test.check {:mvn/version "0.10.0"}}}
+  {:extra-deps {org.clojure/test.check {:mvn/version "1.1.0"}}}
 
   :test-chuck
   {:extra-deps {com.gfredericks/test.chuck {:mvn/version "0.2.10"}}}
 
   :malli
-  {:extra-deps {metosin/malli {:local/root "../../malli"}}}
+  {:extra-deps {metosin/malli {:git/url "https://github.com/metosin/malli"
+                               :sha     "40ad376abe6d8edd25e52156e38f5ddfd3103a75"}}}
 
   :cljs
-  {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.597"}}}
+  {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.773"}}}
 
   :chui
-  {:extra-deps {thheller/shadow-cljs {:mvn/version "2.8.93"}
+  {:extra-deps {thheller/shadow-cljs {:mvn/version "2.10.15"}
                 lambdaisland/chui    {#_#_:local/root "../chui"
                                       :git/url        "https://github.com/lambdaisland/chui"
-                                      :sha            "2582633c1c5969045c84ef3d750a8de7787b46f3"}}}
+                                      :sha            "a164d8ba32f48a632a3f285f41a52f93d7bd024d"}}}
 
   :test
   {:extra-deps {lambdaisland/kaocha      {:mvn/version "RELEASE"}

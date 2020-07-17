@@ -137,10 +137,8 @@
 (defmethod token->ir [:form-feed :common] [_] "\\f")
 
 (defn unsupported-operation-exception [msg]
-  #?(:clj
-     (java.lang.UnsupportedOperationException. msg)
-     :cljs
-     (js/Error. msg)))
+  #?(:clj (java.lang.UnsupportedOperationException. ^String msg)
+     :cljs (js/Error. msg)))
 
 (defn assert-line-break-not-in-class []
   ;; Java does not allow #"[\R]", and emulating the behaviour of \R inside a
