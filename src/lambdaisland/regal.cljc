@@ -137,7 +137,8 @@
 (defmethod token->ir [:form-feed :common] [_] "\\f")
 
 (defn unsupported-operation-exception [msg]
-  #?(:clj (java.lang.UnsupportedOperationException. ^String msg)
+  #?(:bb (Exception. ^String msg)
+     :clj (java.lang.UnsupportedOperationException. ^String msg)
      :cljs (js/Error. msg)))
 
 (defn assert-line-break-not-in-class []
