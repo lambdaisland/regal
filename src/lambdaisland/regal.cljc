@@ -136,11 +136,17 @@
 (defmethod token->ir [:tab :common] [_] "\\t")
 (defmethod token->ir [:form-feed :common] [_] "\\f")
 
+(defn unsupported-operation-exception [msg]
+  #?(:clj
+     (java.lang.UnsupportedOperationException. msg)
+     :cljs
+     (js/Error. msg)))
+
 (defn assert-line-break-not-in-class []
   ;; Java does not allow #"[\R]", and emulating the behaviour of \R inside a
   ;; class is not possible either, so we don't support it.
   (when *character-class*
-    (throw (java.lang.UnsupportedOperationException. ":line-break can not be used inside [:class] or [:not]"))))
+    (throw (unsupported-operation-exception ":line-break can not be used inside [:class] or [:not]"))))
 
 (defmethod token->ir [:line-break :java8] [_]
   (assert-line-break-not-in-class)
