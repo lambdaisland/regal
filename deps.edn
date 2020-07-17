@@ -3,7 +3,7 @@
 
  :aliases
  {:dev
-  {}
+  {:extra-deps {org.clojure/clojure {:mvn/version "1.10.1"}}}
 
   :spec-alpha
   {:extra-deps {org.clojure/spec.alpha {:mvn/version "0.2.187"}
