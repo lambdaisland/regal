@@ -10,3 +10,4 @@ out
 .shadow-cljs
 package-lock.json
 resources/public
+.store
