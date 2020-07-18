@@ -2,7 +2,8 @@
   (:require [lambdaisland.regal :as regal]
             [lambdaisland.regal.generator :as generator]
             [malli.core :as m]
-            [malli.generator :as mg]))
+            [malli.generator :as mg]
+            [malli.error :as me]))
 
 (def regal-schema
   ^{:type ::into-schema}
@@ -39,7 +40,11 @@
 
           mg/Generator
           (-generator [this options]
-            (generator/gen regal)))))))
+            (generator/gen regal))
+
+          me/SchemaError
+          (-error [this]
+            {:error/message {:en "Pattern does not match"}}))))))
 
 (comment
   (require '[malli.core :as m]
@@ -63,9 +68,6 @@
   ;; => true
 
   (me/humanize (m/explain schema "xxx"))
-  ;; => ["unknown error"]
-
-  (me/humanize (m/explain schema "xxx") {:errors {:regal {:error/message {:en "Pattern does not match"}}}})
   ;; => ["Pattern does not match"]
 
   (mg/sample schema)
