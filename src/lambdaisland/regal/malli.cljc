@@ -9,8 +9,7 @@
   ^{:type ::into-schema}
   (reify m/IntoSchema
     (-into-schema [_ properties [regal :as children] options]
-      (when-not (= 1 (count children))
-        (m/fail! ::child-error {:type :regal, :properties properties, :children children, :min 1, :max 1}))
+      (m/-check-children! :regal properties children {:min 1, :max 1})
       (let [form (m/create-form :regal properties children)
             regex (regal/regex regal)]
         ^{:type ::schema}
@@ -29,7 +28,6 @@
                   (conj acc (m/error path in this x (:type (ex-data e))))))))
           (-transformer [this transformer method options]
             (m/-value-transformer transformer this method options))
-
           (-walk [this walker in options]
             (when (m/-accept walker this in options)
               (m/-outer walker this (vec children) in options)))
