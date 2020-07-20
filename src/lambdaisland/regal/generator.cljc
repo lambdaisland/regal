@@ -63,7 +63,7 @@
   (platform/hex->int (subs h 2)))
 
 (def any-gen
-  (gen/such-that (complement #{\r \n \u0085}) gen/char))
+  (gen/such-that (complement #{\r \n \u0085 "\r" "\n" "\u0085"}) gen/char))
 
 (def whitespace-gen
   (gen/fmap (comp char parse-hex) (gen/one-of (map gen/return regal/whitespace-chars))))

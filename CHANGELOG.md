@@ -6,6 +6,7 @@
   of incorrectly parsing to `:whitespace` / `:non-whitespace`
 - All flavors: parse unkown escape codes to their respective characters
 - Use the Malli error protocol so we get error messages automatically (thanks @ikitommi)
+- Generators: `:any` should not generate newlines (now also for cljs)
 
 # 0.0.80 (2020-07-17 / 3976988)
 
