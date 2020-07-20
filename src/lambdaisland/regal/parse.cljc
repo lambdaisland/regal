@@ -272,7 +272,8 @@
     :tab
     \f
     :form-feed
-    [::not-implemented x]))
+    #_:else
+    ch))
 
 (defmethod transform [:NormalSlashedCharacters :common] [x]
   (transform-normal-slached-characters x))
@@ -283,6 +284,7 @@
     :alert
     \e
     :escape
+    #_:else
     (transform-normal-slached-characters x)))
 
 (defmethod transform [:SpecialCharClass :java] [[_ [ch] :as x]]
@@ -298,9 +300,10 @@
     \W
     :non-word
     \s
-    :whitespace
+    [:class " " :tab :newline :vertical-tab :form-feed :return]
     \S
-    :non-whitespace
+    [:not " " :tab :newline :vertical-tab :form-feed :return]
+    #_:else
     [::not-implemented x]))
 
 (defmethod transform [:SpecialCharClass :ecma] [[_ [ch] :as x]]
