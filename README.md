@@ -121,7 +121,7 @@ Forms consist of vectors, keywords, strings, character literals, and in some
 cases integers. For example:
 
 ``` clojure
-[:cat [:alt [:char 11] [:char 13]] \J [:rep "hello" 2 3]]
+[:cat [:alt [:char 11] [:char 13]] \J [:repeat "hello" 2 3]]
 ```
 
 Forms have platform-independent semantics. The same regal form will match the
