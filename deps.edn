@@ -23,7 +23,7 @@
   {:extra-deps {com.gfredericks/test.chuck {:mvn/version "0.2.10"}}}
 
   :malli
-  {:extra-deps {metosin/malli {:mvn/version "0.0.1-SNAPSHOT"}
+  {:extra-deps {metosin/malli {:mvn/version "0.0.1-20200920.124124-25"}
                 #_{:git/url "https://github.com/metosin/malli"
                    :sha     "40ad376abe6d8edd25e52156e38f5ddfd3103a75"}}}
 
