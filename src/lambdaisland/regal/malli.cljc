@@ -45,11 +45,12 @@
            '[malli.json-schema :as mj]
            '[lambdaisland.regal.malli :as regal-malli])
 
-  (def malli-opts {:registry {:regal regal-malli/regal-schema}})
+  ;; use directly
+  (def schema [regal-malli/regal-schema [:+ "y"]])
 
-  (def form [:+ "y"])
-
-  (def schema (m/schema [:regal form] malli-opts))
+  ;; or via a registry
+  (def registry {:regal regal-malli/regal-schema})
+  (def schema (m/schema [:regal [:+ "y"]] {:registry registry}))
 
   (m/form schema)
   ;; => [:regal [:+ "y"]]
