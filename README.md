@@ -270,6 +270,7 @@ mapping namespaced keywords to Regal expressions.
 (require '[malli.core :as m]
          '[malli.error :as me]
          '[malli.generator :as mg]
+         '[malli.json-schema :as mj]
          '[lambdaisland.regal.malli :as regal-malli])
 
 (def malli-opts {:registry {:regal regal-malli/regal-schema}})
@@ -287,11 +288,16 @@ mapping namespaced keywords to Regal expressions.
 (m/validate schema "yyy")
 ;; => true
 
-(me/humanize (m/explain schema "xxx"))
-;; => ["unknown error"]
+(m/explain schema "xxx")
+;; => {:schema [:regal [:+ "y"]]
+;;     :value "xxx"
+;;     :errors (#Error{:path [], :in [], :schema [:regal [:+ "y"]], :value "xxx"})}
 
-(me/humanize (m/explain schema "xxx") {:errors {:regal {:error/message {:en "Pattern does not match"}}}})
+(me/humanize (m/explain schema "xxx"))
 ;; => ["Pattern does not match"]
+
+(mj/transform schema)
+;; => {:type "string", :pattern "y+"}
 
 (mg/sample schema)
 ;; => ("y" "yy" "yy" "yyyy" "yyyy" "y" "yyy" "yyyyy" "yyyyyyyyy" "yyyyyyyy")
