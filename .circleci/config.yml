@@ -11,6 +11,7 @@ commands:
         type: string
     steps:
       - checkout
+      - run: npm install
       - clojure/with_cache:
           cache_version: << parameters.clojure_version >>
           steps:
