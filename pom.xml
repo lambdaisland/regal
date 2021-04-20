@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>lambdaisland</groupId>
   <artifactId>regal</artifactId>
-  <version>0.0.94</version>
+  <version>0.0.97</version>
   <name>regal</name>
   <description>A Regex Swiss Army Knife</description>
   <url>https://github.com/lambdaisland/regal</url>
@@ -22,7 +22,7 @@
     <url>https://github.com/lambdaisland/regal</url>
     <connection>scm:git:git://github.com/lambdaisland/regal.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/lambdaisland/regal.git</developerConnection>
-    <tag>1f59811648e2c8a48061af5dec09ee0b9d434479</tag>
+    <tag>8ed5e8c1bbdce58ca7f9d7d236a3cbebf8940a92</tag>
   </scm>
   <dependencies>
     <dependency>
@@ -82,7 +82,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <git-revision>1f59811648e2c8a48061af5dec09ee0b9d434479</git-revision>
+              <git-revision>8ed5e8c1bbdce58ca7f9d7d236a3cbebf8940a92</git-revision>
             </manifestEntries>
           </archive>
         </configuration>
