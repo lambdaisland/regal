@@ -268,6 +268,9 @@
 (defn sample [r]
   (gen/sample (gen r)))
 
+(defn generate [r]
+  (gen/generate (gen r)))
+
 (comment
   (sample [:cat :digit :whitespace :word])
 

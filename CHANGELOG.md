@@ -2,15 +2,15 @@
 
 ## Added
 
-## Fixed
-
-## Changed
+- Add `lambdaisland.regal.generator/generate` as a shorthand for generating a
+  single value from a regal expression
 
 # 0.0.94 (2021-04-20 / e087c28)
 
 ## Added
 
-- Added support for `[:repeat form num]` (so fixed number of repeats, instead of min/max) to the generator
+- Added support for `[:repeat form num]` (so fixed number of repeats, instead of
+  min/max) to the generator
 
 # 0.0.89 (2020-07-20 / f46699b)
 
