@@ -98,3 +98,19 @@
 (parse/parse
  (regal/regex [:* " " :escape]))
 ;; => [:* [:cat " " :escape]]
+
+(regal/regex
+ [:cat "lambdaisland/kaocha"
+  [:capture
+   [:+ :whitespace]
+   "{"
+   [:* :whitespace]
+   ":mvn/version"
+   [:+ :whitespace]
+   "\""]
+  [:+ [:not "\""]]
+  [:capture
+   "\""
+   [:* :whitespace]
+   "}"]])
+;; =>

@@ -9,6 +9,8 @@
 (re-find name-regex "Arne Brasseur")
 ;; => ["Arne Brasseur" "Arne" "Brasseur"]
 
+(parse/parse #"[ \t\n\x0B\f\r]")
+
 (def regal-form (parse/parse name-regex))
 ;;=>
 [:cat
@@ -21,6 +23,18 @@
   [:cat
    [:class [\A \Z]]
    [:+ [:class [\a \z]]]]]]
+
+(def form
+  (let [word [:cat [:class [\A \Z]] [:+ [:class [\a \z]]]]]
+    [:cat
+     [:capture word]
+     [:+ [:cat
+          [:+ :whitespace]
+          [:capture word]]]]))
+
+(regal/regex regal-form)
+
+(re-seq (regal/regex form) "Hello World")
 
 (regal/with-flavor :ecma
   (regal/regex regal-form))

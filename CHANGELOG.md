@@ -2,9 +2,7 @@
 
 ## Added
 
-## Fixed
-
-## Changed
+- Added support for `[:repeat form num]` (so fixed number of repeats, instead of min/max) to the generator
 
 # 0.0.89 (2020-07-20 / f46699b)
 

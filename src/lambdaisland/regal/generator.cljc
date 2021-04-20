@@ -188,9 +188,11 @@
     (gen/such-that #(re-find pattern (str %)) gen/char)))
 
 (defmethod -generator :repeat [[_ r min max] opts]
-  (gen/bind (gen/choose min max)
-            (fn [i]
-              (apply gen/tuple (repeat i (generator r opts))))))
+  (if max
+    (gen/bind (gen/choose min max)
+              (fn [i]
+                (apply gen/tuple (repeat i (generator r opts)))))
+    (apply gen/tuple (repeat min (generator r opts)))))
 
 (defmethod -generator :capture [[_ & rs] opts]
   (generator (into [:cat] rs) opts))
