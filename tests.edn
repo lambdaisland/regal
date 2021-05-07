@@ -5,4 +5,5 @@
 
  :tests [{:id :clj}
          {:id :cljs
-          :type :kaocha.type/cljs}]}
+          :type :kaocha.type/cljs
+          :cljs/timeout 20000}]}

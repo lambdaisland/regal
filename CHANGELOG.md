@@ -3,6 +3,7 @@
 ## Added
 
 ## Fixed
+- regal/malli integration didn't work with recent versions of Malli due to breaking changes in the malli API.   
 
 ## Changed
 
