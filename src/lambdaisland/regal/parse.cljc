@@ -175,7 +175,7 @@
 (def whitespace-chars
   [[:char 9]
    [:char 10]
-   [:char 11]
+   :vertical-tab
    [:char 12]
    [:char 13]
    [:char 32]
@@ -341,6 +341,7 @@
   :null)
 
 (defmethod transform [:MediumHexChar :common] [[_ x]] [:char (platform/hex->int x)])
+(defmethod transform [:LongHexChar :common] [[_ x]] [:char (platform/hex->int x)])
 
 ;; Character classes, there's a lot to unpack
 (defmethod transform [:BCC :common] [[_ x]] (transform x))

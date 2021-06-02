@@ -22,9 +22,13 @@
 
 (def flavor-hierarchy (-> (make-hierarchy)
                           (derive :java :common)
+                          (derive :java :supports-lookaround)
+                          (derive :java :v-is-vertical-space)
                           (derive :ecma :common)
+                          (derive :ecma :supports-lookaround)
                           (derive :java8 :java)   ; = Java 8
-                          (derive :java9 :java))) ; >= Java 9
+                          (derive :java9 :java)   ; >= Java 9
+                          (derive :re2 :common))) 
 
 (defn runtime-flavor
   "The regex flavor that the current runtime understands."
@@ -70,52 +74,108 @@
 ;; a regex pattern that is already treated as a single entity e.g. by
 ;; quantifiers, then the list is given the metadata `{::grouped true}`
 
-(def whitespace-chars
+(defn left-pad [s len pad]
+  (with-meta
+    (concat (repeat (- len (count s)) pad)
+            s)
+    {::grouped true}))
+(defn left-pad-str [s len pad]
+  (apply str (left-pad s len pad)))
+(defn- quote-char-common [ch]
+  {:pre [(int? ch)]}
+  (cond 
+    (<= ch 0xFF)
+    (str \\ \x (left-pad-str (platform/int->hex ch) 2 \0))
+
+    (<= ch 0xFFFF)
+    (str \\ \u (left-pad-str (platform/int->hex ch) 4 \0))
+    
+    :else
+    (str \\ \x \{ (platform/int->hex ch) \})))
+
+(defn- quote-char-re2 [ch]
+  {:pre [(int? ch)]}
+  (if (< ch 256)
+    (str \\ \x (left-pad-str (platform/int->hex ch) 2 \0))
+    (str \\ \x \{ (platform/int->hex ch) \})))
+
+
+(def whitespace-char-codes
   "These are characters with the Unicode whitespace property. In JavaScript these
   are all matched by \\s, except for NEXT LINE and MONGOLIAN VOWEL SEPARATOR. In
   Java \\s only matches the ASCII one. In Regal :whitespace emulates the
   JavaScript semantics of \\s."
-  ^::grouped
-  ["\\u0009" ;; CHARACTER TABULATION
-   "\\u000A" ;; LINE FEED (LF)
-   "\\u000B" ;; LINE TABULATION
-   "\\u000C" ;; FORM FEED (FF)
-   "\\u000D" ;; CARRIAGE RETURN (CR)
-   "\\u0020" ;; SPACE
-   ;; "\\u0085" ;; NEXT LINE (NEL)
-   "\\u00A0" ;; NO-BREAK SPACE
-   "\\u1680" ;; OGHAM SPACE MARK
-   ;; "\\u180E" ;; MONGOLIAN VOWEL SEPARATOR
-   "\\u2000" ;; EN QUAD
-   "\\u2001" ;; EM QUAD
-   "\\u2002" ;; EN SPACE
-   "\\u2003" ;; EM SPACE
-   "\\u2004" ;; THREE-PER-EM SPACE
-   "\\u2005" ;; FOUR-PER-EM SPACE
-   "\\u2006" ;; SIX-PER-EM SPACE
-   "\\u2007" ;; FIGURE SPACE
-   "\\u2008" ;; PUNCTUATION SPACE
-   "\\u2009" ;; THIN SPACE
-   "\\u200A" ;; HAIR SPACE
-   "\\u2028" ;; LINE SEPARATOR
-   "\\u2029" ;; PARAGRAPH SEPARATOR
-   "\\u202F" ;; NARROW NO-BREAK SPACE
-   "\\u205F" ;; MEDIUM MATHEMATICAL SPACE
-   "\\u3000"]) ;; IDEOGRAPHIC SPACE
+  [0x0009 ;; CHARACTER TABULATION
+   0x000A ;; LINE FEED (LF)
+   0x000B ;; LINE TABULATION
+   0x000C ;; FORM FEED (FF)
+   0x000D ;; CARRIAGE RETURN (CR)
+   0x0020 ;; SPACE
+   ;; 0x0085 ;; NEXT LINE (NEL)
+   0x00A0 ;; NO-BREAK SPACE
+   0x1680 ;; OGHAM SPACE MARK
+   ;; 0x180E ;; MONGOLIAN VOWEL SEPARATOR
+   0x2000 ;; EN QUAD
+   0x2001 ;; EM QUAD
+   0x2002 ;; EN SPACE
+   0x2003 ;; EM SPACE
+   0x2004 ;; THREE-PER-EM SPACE
+   0x2005 ;; FOUR-PER-EM SPACE
+   0x2006 ;; SIX-PER-EM SPACE
+   0x2007 ;; FIGURE SPACE
+   0x2008 ;; PUNCTUATION SPACE
+   0x2009 ;; THIN SPACE
+   0x200A ;; HAIR SPACE
+   0x2028 ;; LINE SEPARATOR
+   0x2029 ;; PARAGRAPH SEPARATOR
+   0x202F ;; NARROW NO-BREAK SPACE
+   0x205F ;; MEDIUM MATHEMATICAL SPACE
+   0x3000]) ;; IDEOGRAPHIC SPACE
+
+(def whitespace-chars 
+  (with-meta
+    (into []
+          (map quote-char-common)
+          whitespace-char-codes)
+    {::grouped true}))
+
+(def whitespace-chars-re2
+  (into []
+        (map quote-char-re2)
+        whitespace-char-codes))
+
+(def non-whitespace-ranges-codes
+  "Character ranges that are not whitespace (the opposite of the above)"
+  [[0x00 0x08]
+   [0x0E 0x1F]
+   [0x21 0x9F]
+   [0xA1 0x167F]
+   [0x1681 0x1FFF]
+   [0x200B 0x2027]
+   [0x202A 0x202E]
+   [0x2030 0x205E]
+   [0x2060 0x2FFF]
+   [0x3001 0xFFFF]])
 
 (def non-whitespace-ranges
   "Character ranges that are not whitespace (the opposite of the above)"
-  ^::grouped
-  ["\\x00-\\x08"
-   "\\x0E-\\x1F"
-   "\\x21-\\x9F"
-   "\\xA1-\\u167F"
-   "\\u1681-\\u1FFF"
-   "\\u200B-\\u2027"
-   "\\u202A-\\u202E"
-   "\\u2030-\\u205E"
-   "\\u2060-\\u2FFF"
-   "\\u3001-\\uFFFF"])
+  (with-meta
+    (into []
+          (map (fn [[from to]]
+                 (str (quote-char-common from)
+                      \-
+                      (quote-char-common to))))
+          non-whitespace-ranges-codes)
+    {::grouped true}))
+
+(def non-whitespace-ranges-re2
+  "Character ranges that are not whitespace (the opposite of the above)"
+  (into []
+        (map (fn [[from to]] 
+               (str (quote-char-re2 from) 
+                    \-
+                    (quote-char-re2 to))))
+        non-whitespace-ranges-codes))
 
 (defmulti token->ir (fn [token] [token *flavor*]) :hierarchy #'flavor-hierarchy)
 
@@ -165,7 +225,7 @@
 (defmethod token->ir [:escape :java] [_] "\\e")
 (defmethod token->ir [:escape :ecma] [_] "\\x1B")
 
-(defmethod token->ir [:vertical-whitespace :java] [_] "\\v")
+(defmethod token->ir [:vertical-whitespace :v-is-vertical-space] [_] "\\v")
 (defmethod token->ir [:vertical-whitespace :ecma] [_]
   (if *character-class*
     "\\n\\x0B\\f\\r\\x85\\u2028\\u2029"
@@ -181,7 +241,8 @@
     ;; if we're part of a bigger character class then emulate non-whitespace by
     ;; including ranges of characters that are not whitespace between
     ;; Character/MIN_VALUE and Character/MAX_VALUE
-    non-whitespace-ranges
+    (with-meta non-whitespace-ranges
+      {::grouped true})
     `^::grouped (\[ \^ ~whitespace-chars \])))
 
 (defmethod token->ir [:whitespace :ecma] [_] "\\s")
@@ -334,17 +395,9 @@
 (defmethod -regal->ir [:atomic :common] [[_ & rs] opts]
   `^::grouped (\( \? \> ~@(regal->ir (into [:cat] rs) opts) \)))
 
-(defn left-pad [s len pad]
-  (with-meta
-    (concat (repeat (- len (count s)) pad)
-            s)
-    {::grouped true}))
-
 (defmethod -regal->ir [:char :common] [[_ ch] opts]
   {:pre [(int? ch)]}
-  (if (< ch 256)
-    `^::grouped (\\ \x ~(left-pad (platform/int->hex ch) 2 \0))
-    `^::grouped (\\ \u ~(left-pad (platform/int->hex ch) 4 \0))))
+  `^::grouped (~(quote-char-common ch)))
 
 (defmethod -regal->ir [:ctrl :common] [[_ ch] opts]
   (let [ch (if (string? ch) (first ch) ch)]
