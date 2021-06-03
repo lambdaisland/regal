@@ -13,7 +13,7 @@
   (:refer-clojure :exclude [compile])
   (:require [clojure.string :as str]
             [lambdaisland.regal.platform :as platform])
-  #?(:clj (:import java.util.regex.Pattern)
+  #?(:clj (:import java.util.regex.Pattern clojure.lang.IMeta)
      :cljs (:require-macros [lambdaisland.regal :refer [with-flavor]])))
 
 ;; - Do we need escaping inside [:class]? caret/dash?
@@ -21,14 +21,36 @@
 #?(:clj (set! *warn-on-reflection* true))
 
 (def flavor-hierarchy (-> (make-hierarchy)
+                          (derive :v-is-vertical-whitespace :common)
+                          (derive :supports-ctrl :common)
+                          (derive :v-is-vertical-tab :common)
+                          (derive :a-is-alert :common)
+                          (derive :e-is-escape :common)
+                          (derive :R-is-linebreak :common)
+
+                          (derive :java :flavor)
                           (derive :java :common)
                           (derive :java :supports-lookaround)
-                          (derive :java :v-is-vertical-space)
+                          (derive :java :supports-ctrl)
+                          (derive :java :a-is-alert)
+                          (derive :java :e-is-escape)
+                          (derive :java :v-is-vertical-whitespace)
+
+                          (derive :ecma :flavor)
                           (derive :ecma :common)
                           (derive :ecma :supports-lookaround)
+                          (derive :ecma :supports-ctrl)
+                          (derive :ecma :v-is-vertical-tab)
+
                           (derive :java8 :java)   ; = Java 8
+                          (derive :java8 :R-is-linebreak)
+
                           (derive :java9 :java)   ; >= Java 9
-                          (derive :re2 :common))) 
+
+                          (derive :re2 :flavor)
+                          (derive :re2 :common)
+                          (derive :re2 :v-is-vertical-tab)
+                          (derive :re2 :a-is-alert)))
 
 (defn runtime-flavor
   "The regex flavor that the current runtime understands."
@@ -74,22 +96,32 @@
 ;; a regex pattern that is already treated as a single entity e.g. by
 ;; quantifiers, then the list is given the metadata `{::grouped true}`
 
-(defn left-pad [s len pad]
+(defn grouped [r]
   (with-meta
-    (concat (repeat (- len (count s)) pad)
-            s)
+    (if
+     #?(:clj (instance? IMeta r)
+        :cljs (satisfies? IWithMeta r) r)
+      r
+      (list r))
     {::grouped true}))
+
+(defn left-pad [s len pad]
+  (grouped
+   (concat (repeat (- len (count s)) pad)
+           s)))
+
 (defn left-pad-str [s len pad]
   (apply str (left-pad s len pad)))
+
 (defn- quote-char-common [ch]
   {:pre [(int? ch)]}
-  (cond 
+  (cond
     (<= ch 0xFF)
     (str \\ \x (left-pad-str (platform/int->hex ch) 2 \0))
 
     (<= ch 0xFFFF)
     (str \\ \u (left-pad-str (platform/int->hex ch) 4 \0))
-    
+
     :else
     (str \\ \x \{ (platform/int->hex ch) \})))
 
@@ -99,6 +131,13 @@
     (str \\ \x (left-pad-str (platform/int->hex ch) 2 \0))
     (str \\ \x \{ (platform/int->hex ch) \})))
 
+(defmulti quote-char (fn [ch] *flavor*) :hierarchy #'flavor-hierarchy)
+
+(defmethod quote-char :common [ch]
+  (quote-char-common ch))
+
+(defmethod quote-char :re2 [ch]
+  (quote-char-re2 ch))
 
 (def whitespace-char-codes
   "These are characters with the Unicode whitespace property. In JavaScript these
@@ -132,17 +171,17 @@
    0x205F ;; MEDIUM MATHEMATICAL SPACE
    0x3000]) ;; IDEOGRAPHIC SPACE
 
-(def whitespace-chars 
-  (with-meta
-    (into []
-          (map quote-char-common)
-          whitespace-char-codes)
-    {::grouped true}))
+(def whitespace-chars-common
+  (grouped
+   (into []
+         (map quote-char-common)
+         whitespace-char-codes)))
 
 (def whitespace-chars-re2
-  (into []
-        (map quote-char-re2)
-        whitespace-char-codes))
+  (grouped
+   (into []
+         (map quote-char-re2)
+         whitespace-char-codes)))
 
 (def non-whitespace-ranges-codes
   "Character ranges that are not whitespace (the opposite of the above)"
@@ -157,25 +196,25 @@
    [0x2060 0x2FFF]
    [0x3001 0xFFFF]])
 
-(def non-whitespace-ranges
+(def non-whitespace-ranges-common
   "Character ranges that are not whitespace (the opposite of the above)"
-  (with-meta
-    (into []
-          (map (fn [[from to]]
-                 (str (quote-char-common from)
-                      \-
-                      (quote-char-common to))))
-          non-whitespace-ranges-codes)
-    {::grouped true}))
+  (grouped
+   (into []
+         (map (fn [[from to]]
+                (str (quote-char-common from)
+                     \-
+                     (quote-char-common to))))
+         non-whitespace-ranges-codes)))
 
 (def non-whitespace-ranges-re2
   "Character ranges that are not whitespace (the opposite of the above)"
-  (into []
-        (map (fn [[from to]] 
-               (str (quote-char-re2 from) 
-                    \-
-                    (quote-char-re2 to))))
-        non-whitespace-ranges-codes))
+  (grouped
+   (into []
+         (map (fn [[from to]]
+                (str (quote-char-re2 from)
+                     \-
+                     (quote-char-re2 to))))
+         non-whitespace-ranges-codes)))
 
 (defmulti token->ir (fn [token] [token *flavor*]) :hierarchy #'flavor-hierarchy)
 
@@ -201,62 +240,87 @@
      :clj (java.lang.UnsupportedOperationException. ^String msg)
      :cljs (js/Error. msg)))
 
+(defn unsupported-operation [op]
+  (throw (unsupported-operation-exception
+          (str (name op) " is not supported by flavor " *flavor*))))
+
 (defn assert-line-break-not-in-class []
   ;; Java does not allow #"[\R]", and emulating the behaviour of \R inside a
   ;; class is not possible either, so we don't support it.
   (when *character-class*
     (throw (unsupported-operation-exception ":line-break can not be used inside [:class] or [:not]"))))
 
-(defmethod token->ir [:line-break :java8] [_]
+(defmethod token->ir [:line-break :R-is-linebreak] [_]
   (assert-line-break-not-in-class)
   "\\R")
 
-(defmethod token->ir [:line-break :java9] [_]
+(defmethod token->ir [:line-break :supports-lookaround] [_]
   (assert-line-break-not-in-class)
-  "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])")
+  (apply str "(?:\\r\\n|(?!\\r\\n)[\\n-\\r"
+         (concat (map quote-char [0x85 0x2028 0x2029])
+                 [\] \)])))
 
-(defmethod token->ir [:line-break :ecma] [_]
-  (assert-line-break-not-in-class)
-  "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])")
+(prefer-method token->ir [:line-break :R-is-linebreak] [:line-break :supports-lookaround])
 
-(defmethod token->ir [:alert :java] [_] "\\a")
-(defmethod token->ir [:alert :ecma] [_] "\\x07")
+(defmethod token->ir [:alert :a-is-alert] [_] "\\a")
+(defmethod token->ir [:alert :common] [_] (quote-char 0x07))
 
-(defmethod token->ir [:escape :java] [_] "\\e")
-(defmethod token->ir [:escape :ecma] [_] "\\x1B")
+(defmethod token->ir [:escape :e-is-escape] [_] "\\e")
+(defmethod token->ir [:escape :common] [_] (quote-char 0x1B))
 
-(defmethod token->ir [:vertical-whitespace :v-is-vertical-space] [_] "\\v")
-(defmethod token->ir [:vertical-whitespace :ecma] [_]
-  (if *character-class*
-    "\\n\\x0B\\f\\r\\x85\\u2028\\u2029"
-    "[\\n\\x0B\\f\\r\\x85\\u2028\\u2029]"))
+(defmethod token->ir [:vertical-whitespace :v-is-vertical-whitespace] [_] "\\v")
+(defmethod token->ir [:vertical-whitespace :common] [_]
+  (let [chars (grouped
+               (concat ["\\n\\f\\r"]
+                       (map quote-char [0x0B 0x85 0x2028 0x2029])))]
+    (if *character-class*
+      chars
+      (grouped
+       `(\[ ~chars \])))))
 
 (defmethod token->ir [:whitespace :java] [_]
   (if *character-class*
-    whitespace-chars
-    `^::grouped (\[ ~whitespace-chars \])))
+    whitespace-chars-common
+    `^::grouped (\[ ~whitespace-chars-common \])))
+
+(defmethod token->ir [:whitespace :re2] [_]
+  (if *character-class*
+    whitespace-chars-re2
+    `^::grouped (\[ ~whitespace-chars-re2 \])))
 
 (defmethod token->ir [:non-whitespace :java] [_]
   (if *character-class*
     ;; if we're part of a bigger character class then emulate non-whitespace by
     ;; including ranges of characters that are not whitespace between
     ;; Character/MIN_VALUE and Character/MAX_VALUE
-    (with-meta non-whitespace-ranges
-      {::grouped true})
-    `^::grouped (\[ \^ ~whitespace-chars \])))
+    non-whitespace-ranges-common
+    `^::grouped (\[ \^ ~whitespace-chars-common \])))
+
+(defmethod token->ir [:non-whitespace :re2] [_]
+  (if *character-class*
+    ;; if we're part of a bigger character class then emulate non-whitespace by
+    ;; including ranges of characters that are not whitespace between
+    ;; Character/MIN_VALUE and Character/MAX_VALUE
+    non-whitespace-ranges-re2
+    `^::grouped (\[ \^ ~whitespace-chars-re2 \])))
 
 (defmethod token->ir [:whitespace :ecma] [_] "\\s")
 (defmethod token->ir [:non-whitespace :ecma] [_] "\\S")
 
-(defmethod token->ir [:vertical-tab :java] [_] "\\x0B")
-(defmethod token->ir [:vertical-tab :ecma] [_] "\\v")
+(defmethod token->ir [:vertical-tab :common] [_] (quote-char 0x0B))
+(defmethod token->ir [:vertical-tab :v-is-vertical-tab] [_] (grouped "\\v"))
 
-(defmethod token->ir [:null :java] [_] "\\x00")
+(defmethod token->ir [:null :common] [_] (quote-char 0x00))
 (defmethod token->ir [:null :ecma] [_] "\\0")
 
 (declare regal->ir)
 
 (defmulti -regal->ir (fn [[op] opts] [op *flavor*]) :hierarchy #'flavor-hierarchy)
+
+(defmethod -regal->ir :default [[op] opts]
+  (if (isa? flavor-hierarchy *flavor* :flavor)
+    (unsupported-operation op)
+    (throw (unsupported-operation-exception (str "Unknown flavor: " (name *flavor*))))))
 
 (defmethod -regal->ir [:cat :common] [[_ & rs] opts]
   (map #(regal->ir % opts) rs))
@@ -266,7 +330,8 @@
 
 ;; Still missing a few like \u{xxx}
 (defn single-character? [s]
-  (when (string? s)
+  (when (and (string? s)
+             (<= (count s) 9))
     (case (count s)
       1
       true
@@ -274,7 +339,7 @@
       2
       (or (= s "\\\\")
           (re-find #"\\0[0-7]" s)
-          (re-find #"\\[trnfaedDsSwW]" s))
+          (re-find #"\\[trnfaedDsSvwW]" s))
 
       3
       (or (re-find #"\\0[0-7]{2}" s)
@@ -291,7 +356,7 @@
             (re-find #"\\u[0-9a-zA-Z]{4}" s))
         s)
 
-      false)))
+      (re-find #"^\\[xu]\{[\d{1,5}]\}$" s))))
 
 (defn quantifier->ir [q rs opts]
   (let [rsg (regal->ir (into [:cat] rs) opts)
@@ -380,29 +445,36 @@
 (defmethod -regal->ir [:capture :common] [[_ & rs] opts]
   `^::grouped (\( ~@(regal->ir (into [:cat] rs) opts) \)))
 
-(defmethod -regal->ir [:lookahead :common] [[_ & rs] opts]
+(defmethod -regal->ir [:lookahead :supports-lookaround] [[_ & rs] opts]
   `^::grouped (\( \? \= ~@(regal->ir (into [:cat] rs) opts) \)))
 
-(defmethod -regal->ir [:negative-lookahead :common] [[_ & rs] opts]
+(defmethod -regal->ir [:negative-lookahead :supports-lookaround] [[_ & rs] opts]
   `^::grouped (\( \? \! ~@(regal->ir (into [:cat] rs) opts) \)))
 
-(defmethod -regal->ir [:lookbehind :common] [[_ & rs] opts]
+(defmethod -regal->ir [:lookbehind :supports-lookaround] [[_ & rs] opts]
   `^::grouped (\( \? \< \= ~@(regal->ir (into [:cat] rs) opts) \)))
 
-(defmethod -regal->ir [:negative-lookbehind :common] [[_ & rs] opts]
+(defmethod -regal->ir [:negative-lookbehind :supports-lookaround] [[_ & rs] opts]
   `^::grouped (\( \? \< \! ~@(regal->ir (into [:cat] rs) opts) \)))
 
-(defmethod -regal->ir [:atomic :common] [[_ & rs] opts]
+(defmethod -regal->ir [:atomic :supports-lookaround] [[_ & rs] opts]
   `^::grouped (\( \? \> ~@(regal->ir (into [:cat] rs) opts) \)))
 
 (defmethod -regal->ir [:char :common] [[_ ch] opts]
   {:pre [(int? ch)]}
   `^::grouped (~(quote-char-common ch)))
 
-(defmethod -regal->ir [:ctrl :common] [[_ ch] opts]
+(defmethod -regal->ir [:ctrl :supports-ctrl] [[_ ch] opts]
   (let [ch (if (string? ch) (first ch) ch)]
     (assert (<= (platform/char->long \A) (platform/char->long ch) (platform/char->long \Z)))
     `^::grouped (\\ \c ~ch)))
+
+(defmethod -regal->ir [:ctrl :common] [[_ ch] opts]
+  (let [ch-code (platform/char->long ch)
+        ctrl-ch-code  (inc (- ch-code (platform/char->long \A)))]
+    (assert (<= (platform/char->long \A) ch-code (platform/char->long \Z)))
+    (quote-char ctrl-ch-code)))
+
 
 (defn- regal->ir
   "Convert a Regal expression into an intermediate representation,

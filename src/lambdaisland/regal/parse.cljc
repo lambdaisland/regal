@@ -214,7 +214,7 @@
    [[:char 12289] [:char 65535]]])
 
 (def vertical-whitespace-equivalent
-  [:class :newline [:char 11] :form-feed :return [:char 133] [:char 8232] [:char 8233]])
+  [:class :newline :form-feed :return [:char 11] [:char 133] [:char 8232] [:char 8233]])
 
 (defmethod transform [:Alternation :common] [[_ & alts]]
   (let [alts (map transform alts)]

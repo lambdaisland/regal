@@ -25,6 +25,8 @@
   :malli
   {:extra-deps {metosin/malli {:mvn/version "0.5.1"}}}
 
+  :re2
+  {:extra-deps {com.google.re2j/re2j {:mvn/version "1.6"}}}
   :cljs
   {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.773"}}}
 
