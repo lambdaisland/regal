@@ -38,4 +38,19 @@
 
   :test
   {:extra-deps {lambdaisland/kaocha      {:mvn/version "RELEASE"}
-                lambdaisland/kaocha-cljs {:mvn/version "RELEASE"}}}}}
+                lambdaisland/kaocha-cljs {:mvn/version "RELEASE"}
+                org.clojure/clojurescript {:mvn/version "1.10.773"}
+                org.clojure/spec.alpha {:mvn/version "0.2.187"}
+                expound                {:mvn/version "0.8.5"}}
+                org.clojure/spec-alpha2 {:git/url "https://github.com/clojure/spec-alpha2.git"
+                                         :sha     "2f84e3a37cab76d44c58785ff4481597429bc1d3"}
+                instaparse          {:mvn/version "1.4.10" }
+                org.clojure/test.check {:mvn/version "1.1.0"}
+                com.gfredericks/test.chuck {:mvn/version "0.2.10"}
+                metosin/malli {:mvn/version "0.0.1-20200920.124124-25"}
+                thheller/shadow-cljs {:mvn/version "2.10.15"}
+                lambdaisland/chui    {#_#_:local/root "../chui"
+                                      :git/url        "https://github.com/lambdaisland/chui"
+                                      :sha            "a164d8ba32f48a632a3f285f41a52f93d7bd024d"}
+                instaparse          {:mvn/version "1.4.10" }}}
+  }}}
