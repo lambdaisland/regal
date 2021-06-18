@@ -39,7 +39,7 @@
                 lambdaisland/kaocha-cljs {:mvn/version "RELEASE"}
                 org.clojure/clojurescript {:mvn/version "1.10.773"}
                 org.clojure/spec.alpha {:mvn/version "0.2.187"}
-                expound                {:mvn/version "0.8.5"}}
+                expound                {:mvn/version "0.8.5"}
                 org.clojure/spec-alpha2 {:git/url "https://github.com/clojure/spec-alpha2.git"
                                          :sha     "2f84e3a37cab76d44c58785ff4481597429bc1d3"}
                 instaparse          {:mvn/version "1.4.10" }
