@@ -45,6 +45,4 @@
                 com.gfredericks/test.chuck {:mvn/version "0.2.10"}
                 metosin/malli {:mvn/version "0.5.1"}
                 thheller/shadow-cljs {:mvn/version "2.10.15"}
-                lambdaisland/chui    {#_#_:local/root "../chui"
-                                      :git/url        "https://github.com/lambdaisland/chui"
-                                      :sha            "a164d8ba32f48a632a3f285f41a52f93d7bd024d"}}}}}
+                lambdaisland/chui    {:mvn/version "1.0.179"}}}}}
