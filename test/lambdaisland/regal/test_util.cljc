@@ -40,5 +40,26 @@
                        :cases (format-cases (take-while vector? cases))}))
          result)))))
 
+#?(:clj
+   (do
+     (defn re2-compile ^com.google.re2j.Pattern [s]
+       (com.google.re2j.Pattern/compile s))
+     (defn re2-groups
+       [^com.google.re2j.Matcher m]
+       (let [gc  (. m (groupCount))]
+         (if (zero? gc)
+           (. m (group))
+           (loop [ret [] c 0]
+             (if (<= c gc)
+               (recur (conj ret (. m (group c))) (inc c))
+               ret)))))
+     (defn re2-find
+       ([^com.google.re2j.Matcher m]
+        (when (. m (find))
+          (re2-groups m)))
+       ([^com.google.re2j.Pattern re s]
+        (let [m (.matcher re s)]
+          (re2-find m))))))
+
 #_
 (test-cases)

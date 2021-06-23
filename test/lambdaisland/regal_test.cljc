@@ -79,25 +79,6 @@
     "}" "\\}"))
 
 
-#?(:clj
-   (do
-     (defn re2-groups
-       [^com.google.re2j.Matcher m]
-       (let [gc  (. m (groupCount))]
-         (if (zero? gc)
-           (. m (group))
-           (loop [ret [] c 0]
-             (if (<= c gc)
-               (recur (conj ret (. m (group c))) (inc c))
-               ret)))))
-     (defn re2-find
-       ([^com.google.re2j.Matcher m]
-        (when (. m (find))
-          (re2-groups m)))
-       ([^com.google.re2j.Pattern re s]
-        (let [m (.matcher re s)]
-          (re2-find m))))))
-
 (def flavors [:java8 :java9 :ecma :re2])
 
 (def parseable-flavor? #{:java8 :java9 :ecma})
@@ -122,19 +103,17 @@
               :let [pattern (if (map? pattern)
                               (some pattern (test-util/flavor-parents flavor))
                               pattern)]]
-        (if (vector? pattern)
-          (case (first pattern)
-            :throws
-            (testing (str "Generating pattern throws (" (name id) ") " (pr-str form) " (" flavor ")")
-              (if-some [msg (second pattern)]
-                (is (thrown-with-msg? #?(:clj  Exception
-                                         :cljs js/Error) (re-pattern msg)
-                                      (regal/with-flavor flavor
-                                        (regal/pattern form))))
-                (is (thrown? #?(:clj  Exception
-                                :cljs js/Error)
-                             (regal/with-flavor flavor
-                               (regal/pattern form)))))))
+        (if (throws? flavor)
+          (testing (str "Generating pattern throws (" (name id) ") " (pr-str form) " (" flavor ")")
+            (if-some [msg (second pattern)]
+              (is (thrown-with-msg? #?(:clj  Exception
+                                       :cljs js/Error) (re-pattern msg)
+                                    (regal/with-flavor flavor
+                                      (regal/pattern form))))
+              (is (thrown? #?(:clj  Exception
+                              :cljs js/Error)
+                           (regal/with-flavor flavor
+                             (regal/pattern form))))))
           (testing (str "Generated pattern is correct (" (name id) ") " (pr-str form) " (" flavor ")")
             (regal/with-flavor flavor
               (is (= pattern (regal/pattern form))))))
@@ -153,8 +132,8 @@
           #?(:clj
              (when-not (or (skip? :re2) (throws? :re2))
                (testing "Generated pattern matches (re2)"
-                 (is (= match (re2-find (regal/with-flavor :re2
-                                          (com.google.re2j.Pattern/compile
+                 (is (= match (test-util/re2-find (regal/with-flavor :re2
+                                          (test-util/re2-compile
                                            (regal/pattern form)))
                                         input))))))
 

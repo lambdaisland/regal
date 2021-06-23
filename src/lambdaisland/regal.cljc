@@ -226,6 +226,8 @@
 (defmethod token->ir [:start :common] [_] "^")
 (defmethod token->ir [:end :common] [_] "$")
 (defmethod token->ir [:any :common] [_] ".")
+(defmethod token->ir [:any :re2] [_] 
+  (grouped "[^\\n\\r]"))
 (defmethod token->ir [:digit :common] [_] "\\d")
 (defmethod token->ir [:non-digit :common] [_] "\\D")
 (defmethod token->ir [:word :common] [_] "\\w")
@@ -260,6 +262,12 @@
          (concat (map quote-char [0x85 0x2028 0x2029])
                  [\] \)])))
 
+(defmethod token->ir [:line-break :common] [_]
+  (assert-line-break-not-in-class)
+  (apply str "(?:\\r\\n|[\\n-\\r"
+         (concat (map quote-char [0x85 0x2028 0x2029])
+                 [\] \)])))
+(prefer-method token->ir [:line-break :supports-lookaround] [:line-break :common])
 (prefer-method token->ir [:line-break :R-is-linebreak] [:line-break :supports-lookaround])
 
 (defmethod token->ir [:alert :a-is-alert] [_] "\\a")

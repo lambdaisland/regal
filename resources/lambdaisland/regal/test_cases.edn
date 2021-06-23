@@ -73,7 +73,7 @@
   {:java8 "\\R"
    :java9 "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"
    :ecma  "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"
-   :re2 [:throws]}
+   :re2 "(?:\\r\\n|[\\n-\\r\\x85\\x{2028}\\x{2029}])"}
   ["\r" "\r"]
   ["\n" "\n"]
   ["\f" "\f"]
@@ -87,7 +87,7 @@
   {:java8 "\\R\\R"
    :java9 "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"
    :ecma  "(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])(?:\\r\\n|(?!\\r\\n)[\\n-\\r\\x85\\u2028\\u2029])"
-   :re2 [:throws]}
+   :re2 :skip}
   ["\r\r" "\r\r"]
   ["\n\n" "\n\n"]
   ["\f\f" "\f\f"]
@@ -141,7 +141,8 @@
  ;; http://www.regular-expressions.info/refbasic.html
 
  :dot
- [:any "." ["x" "x"]]
+ [:any {:java "." :ecma "." :re2 "[^\\n\\r]"} 
+  ["x" "x"]]
 
  :alternation
  [[:alt "abc" "def" "xyz"] "abc|def|xyz"
