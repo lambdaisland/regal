@@ -357,14 +357,14 @@
       4
       (re-find #"\\0[0-3][0-7]{2}" s)
 
-      5
+      
       (if (current-flavor? :java)
         (or (when-let [[_ match] (re-find #"\\Q(.*)\\E" s)]
               (single-character? match))
             (re-find #"\\u[0-9a-zA-Z]{4}" s))
-        s)
+        
 
-      (re-find #"^\\[xu]\{[\d{1,5}]\}$" s))))
+        (re-find #"^\\[xu]\{[\d{1,5}]\}$" s)))))
 
 (defn quantifier->ir [q rs opts]
   (let [rsg (regal->ir (into [:cat] rs) opts)
@@ -591,7 +591,7 @@
   - replace `[:not :whitespace]` with `:non-whitespace`"
   [form]
   (cond
-    (= [:not :whitespace])
+    (= [:not :whitespace] form)
     :non-whitespace
 
     (= :null form)
