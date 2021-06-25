@@ -43,6 +43,6 @@
                 instaparse          {:mvn/version "1.4.10" }
                 org.clojure/test.check {:mvn/version "1.1.0"}
                 com.gfredericks/test.chuck {:mvn/version "0.2.10"}
-                metosin/malli {:mvn/version "0.5.1"}
+                metosin/malli {:mvn/version "0.1-20200920.124124-25"}
                 thheller/shadow-cljs {:mvn/version "2.10.15"}
                 lambdaisland/chui    {:mvn/version "1.0.179"}}}}}
