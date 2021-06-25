@@ -49,8 +49,8 @@ workflows:
   kaocha_test:
     jobs:
       - java-11-clojure-1_10
-      - java-11-clojure-1_9
+      #- java-11-clojure-1_9
       - java-9-clojure-1_10
-      - java-9-clojure-1_9
+      #- java-9-clojure-1_9
       - java-8-clojure-1_10
-      - java-8-clojure-1_9
+      #- java-8-clojure-1_9
