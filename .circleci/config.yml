@@ -1,8 +1,8 @@
 version: 2.1
 
 orbs:
-  kaocha: lambdaisland/kaocha@dev:first
-  clojure: lambdaisland/clojure@dev:first
+  kaocha: lambdaisland/kaocha@0.0.1
+  clojure: lambdaisland/clojure@0.0.6
 
 commands:
   checkout_and_run:
@@ -14,6 +14,7 @@ commands:
       - clojure/with_cache:
           cache_version: << parameters.clojure_version >>
           steps:
+            - run: npm install ws
             - kaocha/execute:
                 args: "--reporter documentation --plugin cloverage --codecov"
                 clojure_version: << parameters.clojure_version >>
@@ -48,8 +49,8 @@ workflows:
   kaocha_test:
     jobs:
       - java-11-clojure-1_10
-      - java-11-clojure-1_9
+      #- java-11-clojure-1_9
       - java-9-clojure-1_10
-      - java-9-clojure-1_9
+      #- java-9-clojure-1_9
       - java-8-clojure-1_10
-      - java-8-clojure-1_9
+      #- java-8-clojure-1_9
