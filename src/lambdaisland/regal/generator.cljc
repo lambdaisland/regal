@@ -63,7 +63,7 @@
   (platform/hex->int (subs h 2)))
 
 (def any-gen
-  (gen/such-that (complement #{\r \n \u0085 "\r" "\n" "\u0085"}) gen/char))
+  (gen/such-that (complement #{\return \newline \u0085 "\r" "\n" "\u0085"}) gen/char))
 
 (def whitespace-gen
   (gen/fmap (comp char parse-hex) (gen/one-of (map gen/return regal/whitespace-chars))))
@@ -265,11 +265,19 @@
                                               ::initial? true
                                               ::final? true)))))
 
-(defn sample [r]
-  (gen/sample (gen r)))
+(defn sample
+  ([r]
+   (gen/sample (gen r)))
+  ([r num-samples]
+   (gen/sample (gen r) num-samples)))
 
-(defn generate [r]
-  (gen/generate (gen r)))
+(defn generate
+  ([r]
+   (gen/generate (gen r)))
+  ([r size]
+   (gen/generate (gen r) size))
+  ([r size seed]
+   (gen/generate (gen r) size seed)))
 
 (comment
   (sample [:cat :digit :whitespace :word])
