@@ -2,8 +2,14 @@
 
 ## Added
 
+- `lambdaisland.regal.generator/sample` and
+  `lambdaisland.regal.generator/generate` now can take an optional size and (for
+  `generate`) seed
+
 ## Fixed
-- regal/malli integration didn't work with recent versions of Malli due to breaking changes in the malli API.   
+
+- regal/malli integration didn't work with recent versions of Malli due to breaking changes in the malli API.
+- Make sure the `:any` generator does not generate `\return` or `\newline`
 
 ## Changed
 
