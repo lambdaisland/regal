@@ -22,7 +22,7 @@
     <url>https://github.com/lambdaisland/regal</url>
     <connection>scm:git:git://github.com/lambdaisland/regal.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/lambdaisland/regal.git</developerConnection>
-    <tag>8ed5e8c1bbdce58ca7f9d7d236a3cbebf8940a92</tag>
+    <tag>44f2c28d400a70535460806c8f805e544c502f50</tag>
   </scm>
   <dependencies>
     <dependency>
@@ -40,7 +40,7 @@
     <dependency>
       <groupId>metosin</groupId>
       <artifactId>malli</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>0.5.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -82,7 +82,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <git-revision>8ed5e8c1bbdce58ca7f9d7d236a3cbebf8940a92</git-revision>
+              <git-revision>44f2c28d400a70535460806c8f805e544c502f50</git-revision>
             </manifestEntries>
           </archive>
         </configuration>
