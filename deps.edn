@@ -1,4 +1,4 @@
-{:paths ["src" "test" "resources"]
+{:paths ["src" "resources"]
  :deps  {}
 
  :aliases
@@ -7,14 +7,14 @@
 
   :spec-alpha
   {:extra-deps {org.clojure/spec.alpha {:mvn/version "0.2.187"}
-                expound                {:mvn/version "0.8.5"}}}
+                expound/expound                {:mvn/version "0.8.5"}}}
 
   :spec-alpha2
   {:extra-deps {org.clojure/spec-alpha2 {:git/url "https://github.com/clojure/spec-alpha2.git"
                                          :sha     "2f84e3a37cab76d44c58785ff4481597429bc1d3"}}}
 
   :instaparse
-  {:extra-deps {instaparse          {:mvn/version "1.4.10" }}}
+  {:extra-deps {instaparse/instaparse          {:mvn/version "1.4.10" }}}
 
   :test-check
   {:extra-deps {org.clojure/test.check {:mvn/version "1.1.0"}}}
@@ -35,12 +35,13 @@
                                       :sha            "a164d8ba32f48a632a3f285f41a52f93d7bd024d"}}}
 
   :test
-  {:extra-deps {lambdaisland/kaocha      {:mvn/version "RELEASE"}
+  {:extra-paths ["test"]
+   :extra-deps {lambdaisland/kaocha      {:mvn/version "RELEASE"}
                 lambdaisland/kaocha-cljs {:mvn/version "RELEASE"}
                 org.clojure/clojurescript {:mvn/version "1.10.773"}
                 org.clojure/spec.alpha {:mvn/version "0.2.187"}
-                expound                {:mvn/version "0.8.5"}
-                instaparse          {:mvn/version "1.4.10" }
+                expound/expound                {:mvn/version "0.8.5"}
+                instaparse/instaparse          {:mvn/version "1.4.10" }
                 org.clojure/test.check {:mvn/version "1.1.0"}
                 com.gfredericks/test.chuck {:mvn/version "0.2.10"}
                 metosin/malli {:mvn/version "0.5.1"}
