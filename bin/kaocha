@@ -4,4 +4,4 @@ set -e
 
 [[ -d node_modules ]] || npm install ws
 
-clojure -J-XX:+UseG1GC -A:dev:test:test-check:cljs:instaparse -m kaocha.runner "$@"
+clojure -J-XX:+UseSerialGC -A:dev:test:test-check:cljs:instaparse -m kaocha.runner "$@"
