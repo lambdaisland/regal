@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  kaocha: lambdaisland/kaocha@0.0.1
+  kaocha: lambdaisland/kaocha@0.0.2
   clojure: lambdaisland/clojure@0.0.6
 
 commands:
@@ -17,6 +17,7 @@ commands:
           steps:
             - kaocha/execute:
                 args: "--reporter documentation --plugin cloverage --codecov"
+                clojure-args: "-J-XX:+UseSerialGC"
                 clojure_version: << parameters.clojure_version >>
                 aliases: ":dev:test:test-check:cljs:instaparse:malli"
       - kaocha/upload_codecov
