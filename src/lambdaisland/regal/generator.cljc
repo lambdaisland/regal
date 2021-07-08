@@ -66,19 +66,17 @@
   (gen/such-that (complement #{\return \newline \u0085 "\r" "\n" "\u0085"}) gen/char))
 
 (def whitespace-gen
-  (gen/fmap (comp char parse-hex) (gen/one-of (map gen/return regal/whitespace-chars))))
+  (gen/fmap char (gen/one-of (map gen/return regal/whitespace-char-codes))))
 
 (def non-whitespace-gen
   (gen/fmap
    char
    (gen/one-of
     (map
-     (comp
-      (fn [[from to]]
-        (gen/choose (parse-hex from)
-                    (parse-hex to)))
-      #(str/split % #"-"))
-     regal/non-whitespace-ranges))))
+     (fn [[from to]]
+       (gen/choose from
+                   to))
+     regal/non-whitespace-ranges-codes))))
 
 (def line-break-gen
   (gen/one-of (map gen/return ["\r\n" "\n" "\u000B" "\f" "\r" "\u0085" "\u2028" "\u2029"])))

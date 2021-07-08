@@ -53,8 +53,13 @@
                        (filter vector?)
                        (map first)
                        set))
-
-(s/def ::regal/token known-tokens)
+(defn token-gen []
+  (s/gen (disj known-tokens 
+               :start :end)))
+(s/def ::regal/token 
+       (s/with-gen known-tokens
+                   (fn []
+                     (token-gen))))
 
 ;; Tokens allowed in a :class/:not context
 (s/def ::regal/class-token (disj known-tokens :start :end :line-break :any))
