@@ -12,14 +12,22 @@ commands:
     steps:
       - checkout
       - run: npm install ws
+      - run: ulimit -c unlimited
       - clojure/with_cache:
           cache_version: << parameters.clojure_version >>
           steps:
             - kaocha/execute:
-                args: "--reporter documentation --plugin cloverage --codecov & jinfo `ps -C java -o pid= | head -n 1 | sed 's/ //g'`"
+                args: "--reporter documentation --plugin cloverage --codecov"
                 clojure-args: "-J-XX:+UseSerialGC"
                 clojure_version: << parameters.clojure_version >>
                 aliases: ":dev:test:test-check:cljs:instaparse:malli"
+            - run:
+                command: |
+                  mkdir -p /tmp/core_dumps
+                  cp core.* /tmp/core_dumps
+                when: on_fail
+      - store_artifacts:
+          path: /tmp/core_dumps
       - kaocha/upload_codecov
 
 jobs:
