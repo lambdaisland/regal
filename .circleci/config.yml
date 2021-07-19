@@ -15,6 +15,7 @@ commands:
       - clojure/with_cache:
           cache_version: << parameters.clojure_version >>
           steps:
+            - run: jinfo `ps -C java -o pid= | head -n 1 | sed "s/ //g"`
             - kaocha/execute:
                 args: "--reporter documentation --plugin cloverage --codecov"
                 clojure-args: "-J-XX:+UseSerialGC"
