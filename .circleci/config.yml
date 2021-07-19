@@ -16,7 +16,7 @@ commands:
           cache_version: << parameters.clojure_version >>
           steps:
             - kaocha/execute:
-                args: "--reporter documentation --plugin cloverage --codecov & jinfo `ps -C java -o pid= | head -n 1 | sed "s/ //g"`"
+                args: "--reporter documentation --plugin cloverage --codecov & jinfo `ps -C java -o pid= | head -n 1 | sed s/ //g`"
                 clojure-args: "-J-XX:+UseSerialGC"
                 clojure_version: << parameters.clojure_version >>
                 aliases: ":dev:test:test-check:cljs:instaparse:malli"
