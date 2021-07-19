@@ -15,12 +15,12 @@ commands:
       - clojure/with_cache:
           cache_version: << parameters.clojure_version >>
           steps:
-            - run: jinfo `ps -C java -o pid= | head -n 1 | sed "s/ //g"`
             - kaocha/execute:
-                args: "--reporter documentation --plugin cloverage --codecov"
+                args: "--reporter documentation --plugin cloverage --codecov &"
                 clojure-args: "-J-XX:+UseSerialGC"
                 clojure_version: << parameters.clojure_version >>
                 aliases: ":dev:test:test-check:cljs:instaparse:malli"
+            - run: jinfo `ps -C java -o pid= | head -n 1 | sed "s/ //g"`
       - kaocha/upload_codecov
 
 jobs:
