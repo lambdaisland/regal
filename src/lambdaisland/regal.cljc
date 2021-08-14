@@ -262,6 +262,15 @@
 (defmethod -regal->ir [:? :common] [[_ & rs] opts]
   (quantifier->ir \? rs opts))
 
+(defmethod -regal->ir [:*? :common] [[_ & rs] opts]
+  (quantifier->ir "*?" rs opts))
+
+(defmethod -regal->ir [:+? :common] [[_ & rs] opts]
+  (quantifier->ir "+?" rs opts))
+
+(defmethod -regal->ir [:?? :common] [[_ & rs] opts]
+  (quantifier->ir "??" rs opts))
+
 (defmethod -regal->ir [:repeat :common] [[_ r & ns] opts]
   (quantifier->ir `^::grouped (\{ ~@(interpose \, (map str ns)) \}) [r] opts))
 

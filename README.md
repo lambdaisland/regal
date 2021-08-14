@@ -221,6 +221,9 @@ To use the regex engine provided by the runtime (e.g. through `re-find` or
   - `[:* form]` : match the given form zero or more times
   - `[:+ form]` : match the given form one or more times
   - `[:? form]` : match the given form zero or one time
+  - `[:*? form]` : lazily match the given form zero or more times
+  - `[:+? form]` : lazily match the given form one or more times
+  - `[:?? form]` : lazily match the given form zero or one time
   - `[:class entries...]` : match any of the given characters or ranges, with ranges given as two element vectors. E.g. `[:class [\a \z] [\A \Z] "_" "-"]` is equivalent to `[a-zA-Z_-]`
   - `[:not entries...]` : like `:class`, but negates the result, equivalent to `[^...]`
   - `[:repeat form num]` : repeat a form fixed number of times, like `{5}`

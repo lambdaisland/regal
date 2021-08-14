@@ -2,6 +2,8 @@
 
 ## Added
 
+- `:*?`, `:+?`, and `:??` lazy quantifiers
+
 ## Fixed
 
 ## Changed

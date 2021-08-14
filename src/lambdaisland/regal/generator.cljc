@@ -45,14 +45,23 @@
             (fn [i]
               (apply gen/tuple (repeat i (generator (into [:cat] rs) opts))))))
 
+(defmethod -generator :*? [[_ & rs] opts]
+  (-generator (cons :* rs) opts))
+
 (defmethod -generator :+ [[_ & rs] opts]
   (gen/bind gen/s-pos-int
             (fn [i]
               (apply gen/tuple (repeat i (generator (into [:cat] rs) opts))))))
 
+(defmethod -generator :+? [[_ & rs] opts]
+  (-generator (cons :+ rs) opts))
+
 (defmethod -generator :? [[_ & rs] opts]
   (gen/one-of [(gen/return "")
                (generator (into [:cat] rs) opts)]))
+
+(defmethod -generator :?? [[_ & rs] opts]
+  (-generator (cons :? rs) opts))
 
 (defn parse-hex
   "
