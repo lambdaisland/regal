@@ -17,7 +17,7 @@ commands:
           steps:
             - kaocha/execute:
                 args: "--reporter documentation --plugin cloverage --codecov"
-                clojure-args: "-J-XX:+UseSerialGC -J-Xmx2g"
+                clojure-args: "-J-XX:+UseSerialGC -J-Xmx2g -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-Xloggc:./gc-log.txt"
                 clojure_version: << parameters.clojure_version >>
                 aliases: ":dev:test:test-check:cljs:instaparse:malli"
             - kaocha/upload_codecov
