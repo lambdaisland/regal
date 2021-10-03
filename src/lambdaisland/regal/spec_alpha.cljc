@@ -92,6 +92,15 @@
 (defmethod op :? [_]
   (op-spec :? (s/+ ::regal/form)))
 
+(defmethod op :*? [_]
+  (op-spec :*? (s/+ ::regal/form)))
+
+(defmethod op :+? [_]
+  (op-spec :+? (s/+ ::regal/form)))
+
+(defmethod op :?? [_]
+  (op-spec :?? (s/+ ::regal/form)))
+
 (s/def ::regal/repeat-min nat-int?)
 (s/def ::regal/repeat-max nat-int?)
 

@@ -200,6 +200,19 @@
   ["\u00A0" nil] ;; NON-BREAKING SPACE
   ]
 
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;; lazy vs eager ? / ?? ; * / *?
+ ;; https://www.regular-expressions.info/repeat.html#lazy
+
+ :eager
+ [[:* "a"] "a*" ["aa" "aa"]]
+ [[:+ "a"] "a+" ["aa" "aa"]]
+ [[:? "a"] "a?" ["a" "a"]]
+
+ :lazy
+ [[:*? "a"] "a*?" ["aa" ""]]
+ [[:+? "a"] "a+?" ["aa" "a"]]
+ [[:?? "a"] "a??" ["a" ""]]
 
  ;; Shorthands
  ;; Anchors
@@ -208,6 +221,5 @@
  ;; Capturing groups
  ;; Special groups (Lookahead)
  ;; Modifiers
- ;; lazy vs eager ? / ?? ; * / *?
  ;; character class union / intersection / subtraction
  ]
