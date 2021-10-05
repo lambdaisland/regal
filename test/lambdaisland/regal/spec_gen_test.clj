@@ -14,10 +14,10 @@
 
 (defspec generated-forms-can-be-converted 100
   (prop/for-all [regal form-gen]
-    (try
-      (regal/regex regal)
-      (catch Exception _
-        false))))
+                (try
+                  (regal/regex regal)
+                  (catch Exception _
+                    false))))
 
 (defn- round-trip? [form]
   (= form (parse/parse (regal/regex form))))

@@ -78,22 +78,48 @@
     "|" "\\|"
     "}" "\\}"))
 
+
+(def flavors [:java8 :java9 :ecma :re2])
+
+(def parseable-flavor? #{:java8 :java9 :ecma})
+
 (deftest data-based-tests
   (doseq [{:keys [id cases]} (test-util/test-cases)
-          {:keys [form pattern equivalent tests] :as case} cases]
+          {:keys [form pattern equivalent tests] :as test-case} cases
+          :let [skip? (set (when (map? pattern)
+                            (for [flavor flavors
+                                  :when (= (get pattern flavor :skip) :skip)]
+                              flavor)))
+                throws? (set (when (map? pattern)
+                               (for [[flavor p] pattern
+                                     :when (and (vector? p) (= (first p) :throws))]
+                                 flavor)))]]
 
     (testing (str (pr-str form) " -> " (pr-str pattern))
       (is (s/valid? ::regal/form form))
 
-      (doseq [flavor [:java8 :java9 :ecma]
+      (doseq [flavor flavors
+              :when (not (skip? flavor))
               :let [pattern (if (map? pattern)
                               (some pattern (test-util/flavor-parents flavor))
                               pattern)]]
-        (testing (str "Generated pattern is correct (" (name id) ") " (pr-str form) " (" flavor ")")
-          (regal/with-flavor flavor
-            (is (= pattern (regal/pattern form)))))
+        (if (throws? flavor)
+          (testing (str "Generating pattern throws (" (name id) ") " (pr-str form) " (" flavor ")")
+            (if-some [msg (second pattern)]
+              (is (thrown-with-msg? #?(:clj  Exception
+                                       :cljs js/Error) (re-pattern msg)
+                                    (regal/with-flavor flavor
+                                      (regal/pattern form))))
+              (is (thrown? #?(:clj  Exception
+                              :cljs js/Error)
+                           (regal/with-flavor flavor
+                             (regal/pattern form))))))
+          (testing (str "Generated pattern is correct (" (name id) ") " (pr-str form) " (" flavor ")")
+            (regal/with-flavor flavor
+              (is (= pattern (regal/pattern form))))))
 
-        (when-not (some (comp :no-parse meta) [case cases])
+        (when (and (parseable-flavor? flavor)
+                   (not-any? (comp :no-parse meta) [test-case cases]))
           (testing (str "Pattern parses correctly (" (name id) ") " (pr-str pattern) " (" flavor ")")
             (regal/with-flavor flavor
               (is (= form (parse/parse-pattern pattern)))))))
@@ -103,6 +129,13 @@
 
           (testing "Generated pattern matches"
             (is (= match (re-find (regal/regex form) input))))
+          #?(:clj
+             (when-not (or (skip? :re2) (throws? :re2))
+               (testing "Generated pattern matches (re2)"
+                 (is (= match (test-util/re2-find (regal/with-flavor :re2
+                                          (test-util/re2-compile
+                                           (regal/pattern form)))
+                                        input))))))
 
           (doseq [pattern (if (map? equivalent)
                             (some equivalent (test-util/flavor-parents (regal/runtime-flavor)))
