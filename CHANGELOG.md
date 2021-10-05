@@ -1,10 +1,10 @@
 # Unreleased
 
 ## Added
+- Support for [Google RE2](https://github.com/google/re2j)
 
 ## Fixed
-
-## Changed
+- Some strings were misidentified as single characters, causing wrong quantification
 
 # 0.0.123 (2021-07-14 / af6f5bb)
 
@@ -13,13 +13,12 @@
 - `lambdaisland.regal.generator/sample` and
   `lambdaisland.regal.generator/generate` now can take an optional size and (for
   `generate`) seed
-- Support for [Google RE2](https://github.com/google/re2j)
+
 
 ## Fixed
 
 - regal/malli integration didn't work with recent versions of Malli due to breaking changes in the malli API.
 - Make sure the `:any` generator does not generate `\return` or `\newline`
-- Some strings were misidentified as single characters, causing wrong quantification
 - `normalize` should understand `[:not :whitespace]`
 
 ## Changed
