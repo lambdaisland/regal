@@ -274,6 +274,9 @@
 (defmethod -regal->ir [:repeat :common] [[_ r & ns] opts]
   (quantifier->ir `^::grouped (\{ ~@(interpose \, (map str ns)) \}) [r] opts))
 
+(defmethod -regal->ir [:lazy-repeat :common] [[_ r & ns] opts]
+  (quantifier->ir `^::grouped (\{ ~@(interpose \, (map str ns)) \} \?) [r] opts))
+
 (defn char-class-escape [ch]
   (let [ch #?(:clj (if (string? ch) (first ch) ch)
               :cljs ch)]

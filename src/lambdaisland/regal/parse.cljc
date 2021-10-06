@@ -240,7 +240,8 @@
 
 (def lazified {:? :??
                :+ :+?
-               :* :*?})
+               :* :*?
+               :repeat :lazy-repeat})
 
 (defn lazify [f quantifier]
   (if (= quantifier "?")
@@ -259,11 +260,11 @@
                  (conj-form [(lazify :* quantifier)] (transform expr))
                  :CurlyRepetition
                  (if curly-max
-                   [:repeat
+                   [(lazify :repeat quantifier)
                     (transform expr)
                     (platform/parse-int curly-min)
                     (platform/parse-int curly-max)]
-                   [:repeat (transform expr) (platform/parse-int curly-min)])
+                   [(lazify :repeat quantifier) (transform expr) (platform/parse-int curly-min)])
                  [::not-implemented x])]
       form)
     (transform expr)))

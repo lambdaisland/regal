@@ -228,6 +228,8 @@ To use the regex engine provided by the runtime (e.g. through `re-find` or
   - `[:not entries...]` : like `:class`, but negates the result, equivalent to `[^...]`
   - `[:repeat form num]` : repeat a form fixed number of times, like `{5}`
   - `[:repeat form min max]` : repeat a form a number of times, like `{2,5}`
+  - `[:lazy-repeat form num]` : lazily repeat a form fixed number of times, like `{5}?`
+  - `[:lazy-repeat form min max]` : lazily repeat a form a number of times, like `{2,5}?`
   - `[:capture forms...]` : capturing group with implicit concatenation of the given forms
   - `[:char number]` : a single character, denoted by its unicode codepoint
   - `[:ctrl char]` : a control character, e.g. `[:ctrl \A]` => `^A` => `#"\cA"`

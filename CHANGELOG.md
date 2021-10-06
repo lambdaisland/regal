@@ -2,7 +2,7 @@
 
 ## Added
 
-- `:*?`, `:+?`, and `:??` lazy quantifiers
+- `:*?`, `:+?`, `:??`, and `:lazy-repeat` lazy quantifiers
 
 ## Fixed
 

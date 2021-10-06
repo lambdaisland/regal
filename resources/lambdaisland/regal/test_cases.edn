@@ -208,11 +208,13 @@
  [[:* "a"] "a*" ["aa" "aa"]]
  [[:+ "a"] "a+" ["aa" "aa"]]
  [[:? "a"] "a?" ["a" "a"]]
+ [[:repeat "a" 1 3] "a{1,3}" ["a" "a"] ["aa" "aa"] ["aaa" "aaa"] ["aaaa" "aaa"]]
 
  :lazy
  [[:*? "a"] "a*?" ["aa" ""]]
  [[:+? "a"] "a+?" ["aa" "a"]]
  [[:?? "a"] "a??" ["a" ""]]
+ [[:lazy-repeat "a" 1 3] "a{1,3}?" ["a" "a"] ["aa" "a"] ["aaa" "a"] ["aaaa" "a"]]
 
  ;; Shorthands
  ;; Anchors

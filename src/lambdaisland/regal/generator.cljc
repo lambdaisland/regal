@@ -203,6 +203,9 @@
                 (apply gen/tuple (repeat i (generator r opts)))))
     (apply gen/tuple (repeat min (generator r opts)))))
 
+(defmethod -generator :lazy-repeat [[_ & rs] opts]
+  (-generator (cons :repeat rs) opts))
+
 (defmethod -generator :capture [[_ & rs] opts]
   (generator (into [:cat] rs) opts))
 
