@@ -20,7 +20,9 @@
                     false))))
 
 (defn- round-trip? [form]
-  (= form (parse/parse (regal/regex form))))
+  (try 
+    (= form (parse/parse (regal/regex form)))
+    (catch Exception _ false)))
 
 (defspec round-trip-property 100
   (prop/for-all* [canonical-form-gen] round-trip?))
