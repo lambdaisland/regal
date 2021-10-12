@@ -212,7 +212,11 @@
                                                (gen/tuple form-gen gen/nat gen/nat)))
               prn))
 
+
+  (s/valid? ::regal/form [:lazy-repeat [:?? :return] 2 9])
   (s/valid? ::regal/repeat-impl [:repeat :word 2 2])
+
+  (gen/generate form-gen 0)
 
   (s/valid? ::regal/op [:ctrl \u0230])
 
