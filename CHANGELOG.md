@@ -3,7 +3,7 @@
 ## Added
 - Support for [Google RE2](https://github.com/google/re2j)
 
-- `:*?`, `:+?`, `:??`, and `:lazy-repeat` lazy quantifiers
+- Lazy qualifiers: `:*?`, `:+?`, `:??`, and `:lazy-repeat`
 
 ## Fixed
 - Some strings were misidentified as single characters, causing wrong quantification
