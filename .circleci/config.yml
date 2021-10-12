@@ -20,7 +20,7 @@ commands:
                 clojure-args: "-J-XX:+UseSerialGC"
                 clojure_version: << parameters.clojure_version >>
                 aliases: ":dev:test:test-check:cljs:instaparse:malli"
-      - kaocha/upload_codecov
+            - kaocha/upload_codecov
 
 jobs:
   java-15-clojure-1_10:

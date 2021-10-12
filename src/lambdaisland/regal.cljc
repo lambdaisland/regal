@@ -575,6 +575,7 @@
 
 (defn- splice-cats [[tag & forms :as form]]
   (if (and (not= :repeat tag)
+           (not= :lazy-repeat tag)
            (some (partial tagged-form? :cat) forms))
     (reduce (fn [acc f]
               (if (tagged-form? :cat f)
