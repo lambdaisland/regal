@@ -238,23 +238,33 @@
     (into f1 (next f2))
     (conj f1 f2)))
 
+(def lazified {:? :??
+               :+ :+?
+               :* :*?
+               :repeat :lazy-repeat})
+
+(defn lazify [f quantifier]
+  (if (= quantifier "?")
+    (get lazified f)
+    f))
+
 (defmethod transform [:SuffixedExpr :common] [[_ expr suffix :as x]]
   (if suffix
-    (let [[_SuffixedExp [suffix-type curly-min _ curly-max]] suffix
+    (let [[_SuffixedExp [suffix-type curly-min _ curly-max] [_Quantifier quantifier]] suffix
           form (case suffix-type
                  :Optional
-                 (conj-form [:?] (transform expr))
+                 (conj-form [(lazify :? quantifier)] (transform expr))
                  :Positive
-                 (conj-form [:+] (transform expr))
+                 (conj-form [(lazify :+ quantifier)] (transform expr))
                  :NonNegative
-                 (conj-form [:*] (transform expr))
+                 (conj-form [(lazify :* quantifier)] (transform expr))
                  :CurlyRepetition
                  (if curly-max
-                   [:repeat
+                   [(lazify :repeat quantifier)
                     (transform expr)
                     (platform/parse-int curly-min)
                     (platform/parse-int curly-max)]
-                   [:repeat (transform expr) (platform/parse-int curly-min)])
+                   [(lazify :repeat quantifier) (transform expr) (platform/parse-int curly-min)])
                  [::not-implemented x])]
       form)
     (transform expr)))

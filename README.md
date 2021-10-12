@@ -221,10 +221,15 @@ To use the regex engine provided by the runtime (e.g. through `re-find` or
   - `[:* form]` : match the given form zero or more times
   - `[:+ form]` : match the given form one or more times
   - `[:? form]` : match the given form zero or one time
+  - `[:*? form]` : lazily match the given form zero or more times
+  - `[:+? form]` : lazily match the given form one or more times
+  - `[:?? form]` : lazily match the given form zero or one time
   - `[:class entries...]` : match any of the given characters or ranges, with ranges given as two element vectors. E.g. `[:class [\a \z] [\A \Z] "_" "-"]` is equivalent to `[a-zA-Z_-]`
   - `[:not entries...]` : like `:class`, but negates the result, equivalent to `[^...]`
   - `[:repeat form num]` : repeat a form fixed number of times, like `{5}`
   - `[:repeat form min max]` : repeat a form a number of times, like `{2,5}`
+  - `[:lazy-repeat form num]` : lazily repeat a form fixed number of times, like `{5}?`
+  - `[:lazy-repeat form min max]` : lazily repeat a form a number of times, like `{2,5}?`
   - `[:capture forms...]` : capturing group with implicit concatenation of the given forms
   - `[:char number]` : a single character, denoted by its unicode codepoint
   - `[:ctrl char]` : a control character, e.g. `[:ctrl \A]` => `^A` => `#"\cA"`

@@ -97,29 +97,47 @@
 (defmethod op :? [_]
   (op-spec :? (s/+ ::regal/form)))
 
+(defmethod op :*? [_]
+  (op-spec :*? (s/+ ::regal/form)))
+
+(defmethod op :+? [_]
+  (op-spec :+? (s/+ ::regal/form)))
+
+(defmethod op :?? [_]
+  (op-spec :?? (s/+ ::regal/form)))
+
 (s/def ::regal/repeat-min nat-int?)
 (s/def ::regal/repeat-max nat-int?)
 
-(s/def ::regal/repeat-impl
+(defn repeat-impl [repeat-type]
   (s/and
-   (op-spec :repeat (s/cat :form ::regal/form
-                           :min  ::regal/repeat-min
-                           :max  (s/? ::regal/repeat-max)))
+   (op-spec repeat-type (s/cat :form ::regal/form
+                               :min  ::regal/repeat-min
+                               :max  (s/? ::regal/repeat-max)))
    (fn [{{:keys [_ min max]} :args}]
      (or (nil? max) (< min max)))))
 
+(s/def ::regal/repeat-impl (repeat-impl :repeat))
+(s/def ::regal/lazy-repeat-impl (repeat-impl :lazy-repeat))
+
 (def form-gen (s/gen ::regal/form))
 
-(defmethod op :repeat [_]
+(defn repeat-op [repeat-type repeat-spec]
   (s/with-gen
-    ::regal/repeat-impl
+    repeat-spec
     (fn []
       (gen/fmap (fn [[form & minmax]]
                   (let [[min max] (sort minmax)]
                     (if (= min max)
-                      [:repeat form min]
-                      [:repeat form min max])))
+                      [repeat-type form min]
+                      [repeat-type form min max])))
                 (gen/tuple form-gen gen/nat gen/nat)))))
+
+(defmethod op :repeat [_]
+  (repeat-op :repeat ::regal/repeat-impl))
+
+(defmethod op :lazy-repeat [_]
+  (repeat-op :lazy-repeat ::regal/lazy-repeat-impl))
 
 (s/def ::single-character
   (s/and (s/or :char (s/with-gen char?

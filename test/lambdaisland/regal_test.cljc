@@ -29,11 +29,29 @@
   (is (= "(?:a|b)*"
          (regal/pattern [:* [:alt "a" "b"]])))
 
+  (is (= "a*?"
+         (regal/pattern [:*? "a"])))
+
+  (is (= "(?:ab)*?"
+         (regal/pattern [:*? "ab"])))
+
+  (is (= "(?:ab)*?"
+         (regal/pattern [:*? "a" "b"])))
+
+  (is (= "(?:a|b)*?"
+         (regal/pattern [:*? [:alt "a" "b"]])))
+
   (is (= "a+"
          (regal/pattern [:+ "a"])))
 
+  (is (= "a+?"
+         (regal/pattern [:+? "a"])))
+
   (is (= "a?"
          (regal/pattern [:? "a"])))
+
+  (is (= "a??"
+         (regal/pattern [:?? "a"])))
 
   (is (= "[a-z0-9_\\-]"
          (regal/pattern [:class [\a \z] [\0 \9] \_ \-])))
