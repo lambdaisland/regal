@@ -7,6 +7,8 @@ orbs:
 commands:
   checkout_and_run:
     parameters:
+      clojure_args:
+        type: string
       clojure_version:
         type: string
     steps:
@@ -17,7 +19,7 @@ commands:
           steps:
             - kaocha/execute:
                 args: "--reporter documentation --plugin cloverage --codecov"
-                clojure-args: "-J-XX:+UseSerialGC -J-Xmx2g -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-Xloggc:./gc-log.txt"
+                clojure-args: << parameters.clojure_args >>
                 clojure_version: << parameters.clojure_version >>
                 aliases: ":dev:test:test-check:cljs:instaparse:malli"
             - kaocha/upload_codecov
@@ -25,35 +27,35 @@ commands:
 jobs:
   java-15-clojure-1_10:
     executor: clojure/openjdk15
-    steps: [{checkout_and_run: {clojure_version: "1.10.2"}}]
+    steps: [{checkout_and_run: {clojure_version: "1.10.2", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-Xlog:gc*:file=./gc-log.txt"}}]
 
   java-15-clojure-1_9:
     executor: clojure/openjdk15
-    steps: [{checkout_and_run: {clojure_version: "1.9.0"}}]
+    steps: [{checkout_and_run: {clojure_version: "1.9.0", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-Xlog:gc*:file=./gc-log.txt"}}]
     
   java-11-clojure-1_10:
     executor: clojure/openjdk11
-    steps: [{checkout_and_run: {clojure_version: "1.10.2"}}]
+    steps: [{checkout_and_run: {clojure_version: "1.10.2", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-Xlog:gc*:file=./gc-log.txt"}}]
 
   java-11-clojure-1_9:
     executor: clojure/openjdk11
-    steps: [{checkout_and_run: {clojure_version: "1.9.0"}}]
+    steps: [{checkout_and_run: {clojure_version: "1.9.0", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-Xlog:gc*:file=./gc-log.txt"}}]
 
   java-9-clojure-1_10:
     executor: clojure/openjdk9
-    steps: [{checkout_and_run: {clojure_version: "1.10.2"}}]
+    steps: [{checkout_and_run: {clojure_version: "1.10.2", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-Xlog:gc*:file=./gc-log.txt"}}]
 
   java-9-clojure-1_9:
     executor: clojure/openjdk9
-    steps: [{checkout_and_run: {clojure_version: "1.9.0"}}]
+    steps: [{checkout_and_run: {clojure_version: "1.9.0", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-Xlog:gc*:file=./gc-log.txt"}}]
 
   java-8-clojure-1_10:
     executor: clojure/openjdk8
-    steps: [{checkout_and_run: {clojure_version: "1.10.2"}}]
+    steps: [{checkout_and_run: {clojure_version: "1.10.2", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-Xloggc:./gc-log.txt"}}]
 
   java-8-clojure-1_9:
     executor: clojure/openjdk8
-    steps: [{checkout_and_run: {clojure_version: "1.9.0"}}]
+    steps: [{checkout_and_run: {clojure_version: "1.9.0", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-Xloggc:./gc-log.txt"}}]
 
 workflows:
   kaocha_test:
