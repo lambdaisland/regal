@@ -27,6 +27,12 @@ commands:
                 path: /tmp/gc-log.txt
 
 jobs:
+  java-16-clojure-1_10:
+    executor: clojure/openjdk16
+    steps: [{checkout_and_run: {clojure_version: "1.10.2", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-Xlog:gc*:file=/tmp/gc-log.txt"}}]
+  java-16-clojure-1_9:
+    executor: clojure/openjdk16
+    steps: [{checkout_and_run: {clojure_version: "1.9.0", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-Xlog:gc*:file=/tmp/gc-log.txt"}}]
   java-15-clojure-1_10:
     executor: clojure/openjdk15
     steps: [{checkout_and_run: {clojure_version: "1.10.2", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-Xlog:gc*:file=/tmp/gc-log.txt"}}]
@@ -62,6 +68,8 @@ jobs:
 workflows:
   kaocha_test:
     jobs:
+      - java-16-clojure-1_10
+      - java-16-clojure-1_9
       - java-15-clojure-1_10
       - java-15-clojure-1_9
       - java-11-clojure-1_10
