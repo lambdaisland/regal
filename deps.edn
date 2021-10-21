@@ -38,7 +38,9 @@
 
   :test
   {:extra-paths ["test"]
-   :extra-deps {lambdaisland/kaocha      {:mvn/version "RELEASE"}
+   :extra-deps {lambdaisland/kaocha      {#_:mvn/version #_"RELEASE"
+                                          :git/url "http://github.com/lambdaisland/kaocha"
+                                          :sha "6a484f5edf5079740633a4038158e0e2fb7f75c9"}
                 lambdaisland/kaocha-cljs {:mvn/version "RELEASE"}
                 org.clojure/clojurescript {:mvn/version "1.10.773"}
                 org.clojure/spec.alpha {:mvn/version "0.2.187"}
@@ -49,4 +51,20 @@
                 com.gfredericks/test.chuck {:mvn/version "0.2.10"}
                 metosin/malli {:mvn/version "0.5.1"}
                 thheller/shadow-cljs {:mvn/version "2.10.15"}
-                lambdaisland/chui    {:mvn/version "1.0.179"}}}}}
+                lambdaisland/chui    {:mvn/version "1.0.179"}}}
+  
+:test-local
+  {:extra-paths ["test"]
+   :extra-deps {lambdaisland/kaocha      {:local/root "../kaocha" }
+                lambdaisland/kaocha-cljs {:mvn/version "RELEASE"}
+                org.clojure/clojurescript {:mvn/version "1.10.773"}
+                org.clojure/spec.alpha {:mvn/version "0.2.187"}
+                com.google.re2j/re2j {:mvn/version "1.6"}
+                expound/expound                {:mvn/version "0.8.5"}
+                instaparse/instaparse          {:mvn/version "1.4.10" }
+                org.clojure/test.check {:mvn/version "1.1.0"}
+                com.gfredericks/test.chuck {:mvn/version "0.2.10"}
+                metosin/malli {:mvn/version "0.5.1"}
+                thheller/shadow-cljs {:mvn/version "2.10.15"}
+                lambdaisland/chui    {:mvn/version "1.0.179"}}}
+  }}

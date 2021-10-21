@@ -1,7 +1,8 @@
 #kaocha/v1
 {:plugins [:kaocha.plugin/notifier
            :kaocha.plugin/print-invocations
-           :kaocha.plugin/profiling]
+           :kaocha.plugin/profiling
+           :kaocha.plugin/gc-profiling]
 
  :tests [{:id :clj}
          {:id :cljs
