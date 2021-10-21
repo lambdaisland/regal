@@ -39,7 +39,7 @@
   :test
   {:extra-paths ["test"]
    :extra-deps {lambdaisland/kaocha      {#_:mvn/version #_"RELEASE"
-                                          :git/url "https://github.com/lambdaisland/kaocha"
+                                          :git/url "http://github.com/lambdaisland/kaocha"
                                           :sha "6a484f5edf5079740633a4038158e0e2fb7f75c9"}
                 lambdaisland/kaocha-cljs {:mvn/version "RELEASE"}
                 org.clojure/clojurescript {:mvn/version "1.10.773"}
