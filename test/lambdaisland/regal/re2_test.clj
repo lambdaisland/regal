@@ -37,6 +37,8 @@
                     :let [java-result
                           (try (re-find (regal/regex regal) s)
                                (catch Exception _
+                                 :fai)
+                               (catch StackOverflowError _
                                  :fail))]
                     :when (not= :fail java-result)]
                    (is (= java-result
