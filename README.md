@@ -240,7 +240,7 @@ To use the regex engine provided by the runtime (e.g. through `re-find` or
   - `[:atomic ...]` : match without backtracking ([atomic group](https://www.regular-expressions.info/atomic.html))
 - A `clojure.spec.alpha` definition of the grammar can be made available as `:lambdaisland.regal/form` by explicitly requiring `lambdaisland.regal.spec-alpha`
 
-You can add your own extensions (custom tokens) by providing a `:registry** option
+You can add your own extensions (custom tokens) by providing a `:registry` option
 mapping namespaced keywords to Regal expressions.
 
 
