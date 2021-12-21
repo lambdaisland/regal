@@ -189,7 +189,7 @@ To use the regex engine provided by the runtime (e.g. through `re-find` or
 `re-seq`) you need a platform-specific regex object. This is what
 `lambdaisland.regal/regex` gives you.
 
-###  Grammar
+### Grammar
 
 - Strings and characters match literally. They are escaped, so `.` matches a
   period, not any character, `^` matches a caret, etc.
