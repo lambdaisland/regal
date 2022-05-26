@@ -276,7 +276,8 @@ mapping namespaced keywords to Regal expressions.
 (require '[malli.core :as m]
          '[malli.error :as me]
          '[malli.generator :as mg]
-         '[lambdaisland.regal :as regal])
+         '[lambdaisland.regal :as regal]
+         '[lambdaisland.regal.generator :as regal-gen])
 
 (def form [:+ "y"])
 
@@ -296,6 +297,10 @@ mapping namespaced keywords to Regal expressions.
 
 (me/humanize (m/explain schema "xxx") {:errors {:re {:error/message {:en "Pattern does not match"}}}})
 ;; => ["Pattern does not match"]
+
+(mg/sample [:re {:gen/gen (regal-gen/gen form)} (regal/regex form)])
+;; => ("y" "y" "y" "y" "yy" "yy" "yyyyy" "yyyyy" "yyyyy" "yyyy")
+
 ```
 
 ### BYO test.check / spec-alpha
