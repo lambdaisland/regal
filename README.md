@@ -276,31 +276,26 @@ mapping namespaced keywords to Regal expressions.
 (require '[malli.core :as m]
          '[malli.error :as me]
          '[malli.generator :as mg]
-         '[lambdaisland.regal.malli :as regal-malli])
-
-(def malli-opts {:registry {:regal regal-malli/regal-schema}})
+         '[lambdaisland.regal :as regal])
 
 (def form [:+ "y"])
 
-(def schema (m/schema [:regal form] malli-opts))
+(def schema [:re (regal/regex form)])
 
 (m/form schema)
-;; => [:regal [:+ "y"]]
+;; => [:re #"y+"]
 
 (m/type schema)
-;; => :regal
+;; => :re
 
 (m/validate schema "yyy")
 ;; => true
 
 (me/humanize (m/explain schema "xxx"))
-;; => ["unknown error"]
+;; => ["should match regex"]
 
-(me/humanize (m/explain schema "xxx") {:errors {:regal {:error/message {:en "Pattern does not match"}}}})
+(me/humanize (m/explain schema "xxx") {:errors {:re {:error/message {:en "Pattern does not match"}}}})
 ;; => ["Pattern does not match"]
-
-(mg/sample schema)
-;; => ("y" "yy" "yy" "yyyy" "yyyy" "y" "yyy" "yyyyy" "yyyyyyyyy" "yyyyyyyy")
 ```
 
 ### BYO test.check / spec-alpha
