@@ -272,6 +272,10 @@ mapping namespaced keywords to Regal expressions.
 
 ### Use with Malli
 
+The `lambdaisland.regal.malli` namespace is no longer compatible with the latest
+Malli, so we don't offer a custom Regal Malli schema, but you can use Malli's
+regex schema instead (`:re`), passing it the results from Regal.
+
 ```clojure
 (require '[malli.core :as m]
          '[malli.error :as me]

@@ -1,4 +1,6 @@
-(ns lambdaisland.regal.malli
+(ns ^:deprecated lambdaisland.regal.malli
+  "Custom Malli schema that supports regal directly. No longer compatible with
+  latest Malli, see the README for an alternative way to combine the two."
   (:require [lambdaisland.regal :as regal]
             [lambdaisland.regal.generator :as generator]
             [malli.core :as m]
@@ -48,7 +50,7 @@
 
           #_me/SchemaError
           #_(-error [this]
-            {:error/message {:en "Pattern does not match"}}))))))
+              {:error/message {:en "Pattern does not match"}}))))))
 
 (comment
   (require '[malli.core :as m]
