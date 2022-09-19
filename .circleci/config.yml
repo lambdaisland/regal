@@ -49,22 +49,6 @@ jobs:
     executor: clojure/openjdk11
     steps: [{checkout_and_run: {clojure_version: "1.9.0", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-Xlog:gc*:file=/tmp/gc-log.txt"}}]
 
-  java-9-clojure-1_10:
-    executor: clojure/openjdk9
-    steps: [{checkout_and_run: {clojure_version: "1.10.2", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-Xlog:gc*:file=/tmp/gc-log.txt"}}]
-
-  java-9-clojure-1_9:
-    executor: clojure/openjdk9
-    steps: [{checkout_and_run: {clojure_version: "1.9.0", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-Xlog:gc*:file=/tmp/gc-log.txt"}}]
-
-  java-8-clojure-1_10:
-    executor: clojure/openjdk8
-    steps: [{checkout_and_run: {clojure_version: "1.10.2", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-Xloggc:/tmp/gc-log.txt"}}]
-
-  java-8-clojure-1_9:
-    executor: clojure/openjdk8
-    steps: [{checkout_and_run: {clojure_version: "1.9.0", clojure_args: "-J-XX:+UseSerialGC -J-Xmx2g -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-Xloggc:/tmp/gc-log.txt"}}]
-
 workflows:
   kaocha_test:
     jobs:
@@ -74,7 +58,3 @@ workflows:
       - java-15-clojure-1_9
       - java-11-clojure-1_10
       - java-11-clojure-1_9
-      - java-9-clojure-1_10
-      - java-9-clojure-1_9
-      - java-8-clojure-1_10
-      - java-8-clojure-1_9
