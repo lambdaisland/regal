@@ -5,6 +5,7 @@
 ## Fixed
 
 ## Changed
+* Small additions and tweaks to documentation
 
 # 0.0.143 (2021-10-12 / 2f33f10)
 
