@@ -23,7 +23,7 @@
   {:extra-deps {com.gfredericks/test.chuck {:mvn/version "0.2.13"}}}
 
   :malli
-  {:extra-deps {metosin/malli {:mvn/version "0.5.1"}}} ; pinning this for now, breaking changes
+  {:extra-deps {metosin/malli {:mvn/version "0.15.0"}}}
 
   :re2
   {:extra-deps {com.google.re2j/re2j {:mvn/version "1.7"}}}

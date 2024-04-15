@@ -3,6 +3,7 @@
 ## Added
 
 ## Fixed
+* Support for latest Malli
 
 ## Changed
 * Small additions and tweaks to documentation
