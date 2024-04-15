@@ -5,10 +5,6 @@
             [malli.core :as m]
             [malli.util :as mu]))
 
-(def default-regal-type
-  "The default m/type for regal-schema."
-  ::regal)
-
 (defn ->regal-schema
   "Add to registry with {:registry {::rm/regal (rm/->regal-schema)}}.
 
@@ -19,7 +15,7 @@
   e.g., [:regal [:+ \"y\"]]"
   ([] (->regal-schema nil))
   ([{:keys [type]
-     :or {type default-regal-type}}]
+     :or {type ::regal}}]
    (mu/-util-schema
      {:type type :min 1 :max 1
       :childs 0 ;; no schema children
