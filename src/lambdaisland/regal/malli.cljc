@@ -28,7 +28,7 @@
 (def
   ^{:doc "Consider using rm-regal-schema as it is namespaced to avoid registry clashes.
          
-         Add to registry with {:registry {:regal (rm/regal-schema)}}.
+         Add to registry with {:registry {:regal rm/regal-schema}}.
 
          e.g., [regal [:+ \"y\"]]
 
