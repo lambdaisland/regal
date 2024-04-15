@@ -1,6 +1,6 @@
 (ns lambdaisland.regal.malli.generator
   (:require [lambdaisland.regal.generator :as generator]
-            [lambdaisland.regal.malli :as rm]
+            [lambdaisland.regal.malli :as-alias rm]
             [malli.core :as m]
             [malli.generator :as mg]))
 
@@ -16,7 +16,7 @@
   A custom m/type instead of ::rm/regal can be provided with the :type argument."
   ([] (register-regal-generator nil))
   ([{:keys [type]
-     :or {type rm/default-regal-type}}]
+     :or {type ::rm/regal}}]
    (defmethod mg/-schema-generator type
      [schema options]
      (regal-generator schema options))))
