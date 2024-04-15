@@ -30,7 +30,7 @@
          
          Add to registry with {:registry {:regal rm/regal-schema}}.
 
-         e.g., [regal [:+ \"y\"]]
+         e.g., [:regal [:+ \"y\"]]
 
          To register a generator, use (lambdaisland.regal.malli.generator/register-regal-generator {:type :regal})."
     :deprecated "0.0.144"
