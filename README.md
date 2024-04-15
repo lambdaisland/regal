@@ -282,7 +282,7 @@ The `::rm/regal` schema provides a wrapper for regal checks.
          '[lambdaisland.regal.malli :as rm]
          '[lambdaisland.regal.malli.generator :as rmg])
 
-(def malli-opts {:registry {::rm/regal (rm/regal-schema)}})
+(def malli-opts {:registry {::rm/regal rm/rm-regal-schema}})
 
 (def schema (m/schema [::rm/regal [:+ "y"]] malli-opts))
 
