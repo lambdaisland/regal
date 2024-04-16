@@ -3,24 +3,24 @@
 
  :aliases
  {:dev
-  {:extra-deps {org.clojure/clojure {:mvn/version "1.11.1"}}}
+  {:extra-deps {org.clojure/clojure {:mvn/version "1.11.2"}}}
 
   :spec-alpha
-  {:extra-deps {org.clojure/spec.alpha {:mvn/version "0.3.218"}
+  {:extra-deps {org.clojure/spec.alpha {:mvn/version "0.4.233"}
                 expound/expound        {:mvn/version "0.9.0"}}}
 
   :spec-alpha2
   {:extra-deps {org.clojure/spec-alpha2 {:git/url "https://github.com/clojure/spec-alpha2.git"
-                                         :git/sha "99456b1856a6fd934e2c30b17920bd790dd81775"}}}
+                                         :git/sha "4cbfa677c4cd66339f18e1c122222c05c69e0d8e"}}}
 
   :instaparse
-  {:extra-deps {instaparse/instaparse {:mvn/version "1.4.12" }}}
+  {:extra-deps {instaparse/instaparse {:mvn/version "1.4.14" }}}
 
   :test-check
   {:extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}}}
 
   :test-chuck
-  {:extra-deps {com.gfredericks/test.chuck {:mvn/version "0.2.13"}}}
+  {:extra-deps {com.gfredericks/test.chuck {:mvn/version "0.2.14"}}}
 
   :malli
   {:extra-deps {metosin/malli {:mvn/version "0.15.0"}}}
@@ -28,23 +28,23 @@
   :re2
   {:extra-deps {com.google.re2j/re2j {:mvn/version "1.7"}}}
   :cljs
-  {:extra-deps {org.clojure/clojurescript {:mvn/version "1.11.60"}}}
+  {:extra-deps {org.clojure/clojurescript {:mvn/version "1.11.132"}}}
 
   :chui
-  {:extra-deps {thheller/shadow-cljs {:mvn/version "2.20.2"}
-                lambdaisland/chui    {:mvn/version "1.1.192"}}}
+  {:extra-deps {thheller/shadow-cljs {:mvn/version "2.28.3"}
+                lambdaisland/chui    {:mvn/version "1.2.205"}}}
 
   :test
   {:extra-paths ["test"]
-   :extra-deps  {lambdaisland/kaocha          {:mvn/version "1.70.1086"}
-                 com.lambdaisland/kaocha-cljs {:mvn/version "1.4.130"}
-                 org.clojure/clojurescript    {:mvn/version "1.11.60"}
-                 org.clojure/spec.alpha       {:mvn/version "0.3.218"}
+   :extra-deps  {lambdaisland/kaocha          {:mvn/version "1.88.1376"}
+                 com.lambdaisland/kaocha-cljs {:mvn/version "1.5.154"}
+                 org.clojure/clojurescript    {:mvn/version "1.11.132"}
+                 org.clojure/spec.alpha       {:mvn/version "0.4.233"}
                  com.google.re2j/re2j         {:mvn/version "1.7"}
                  expound/expound              {:mvn/version "0.9.0"}
-                 instaparse/instaparse        {:mvn/version "1.4.12" }
+                 instaparse/instaparse        {:mvn/version "1.4.14" }
                  org.clojure/test.check       {:mvn/version "1.1.1"}
-                 com.gfredericks/test.chuck   {:mvn/version "0.2.13"}
-                 metosin/malli                {:mvn/version "0.5.1"}
-                 thheller/shadow-cljs         {:mvn/version "2.20.2"}
-                 lambdaisland/chui            {:mvn/version "1.1.192"}}}}}
+                 com.gfredericks/test.chuck   {:mvn/version "0.2.14"}
+                 metosin/malli                {:mvn/version "0.15.0"}
+                 thheller/shadow-cljs         {:mvn/version "2.28.3"}
+                 lambdaisland/chui            {:mvn/version "1.2.205"}}}}}

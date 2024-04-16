@@ -3,26 +3,31 @@
 ## Added
 
 ## Fixed
-* Support for latest Malli
-  * New schema type
-    * Deprecated `:regal` schema
-    * Prefer namespaced `::rm/regal` schema
-    * Please read docstrings in `lambdaisland.regal.malli`
-  * Breaking change: in order to avoid a runtime test.check dependency, generators have been moved.
-    * Call `(lambdaisland.regal.malli.generator/register-regal-generator)` to register a generator at testing time.
-      * Please read docstrings in `lambdaisland.regal.malli` for more information.
+
+- Support for latest Malli
+  - New schema type
+    - Deprecated `:regal` schema
+    - Prefer namespaced `::rm/regal` schema
+    - Please read docstrings in `lambdaisland.regal.malli`
+  - Breaking change: in order to avoid a runtime test.check dependency, generators have been moved.
+    - Call `(lambdaisland.regal.malli.generator/register-regal-generator)` to register a generator at testing time.
+      - Please read docstrings in `lambdaisland.regal.malli` for more information.
 
 ## Changed
-* Small additions and tweaks to documentation
+
+- Small additions and tweaks to documentation
+- Upgrade dependencies
 
 # 0.0.143 (2021-10-12 / 2f33f10)
 
 ## Added
+
 - Support for [Google RE2](https://github.com/google/re2j)
 
 - Lazy qualifiers: `:*?`, `:+?`, `:??`, and `:lazy-repeat`
 
 ## Fixed
+
 - Some strings were misidentified as single characters, causing wrong quantification
 
 # 0.0.123 (2021-07-14 / af6f5bb)
