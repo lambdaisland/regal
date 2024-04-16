@@ -3,6 +3,14 @@
 ## Added
 
 ## Fixed
+* Support for latest Malli
+  * New schema type
+    * Deprecated `:regal` schema
+    * Prefer namespaced `::rm/regal` schema
+    * Please read docstrings in `lambdaisland.regal.malli`
+  * Breaking change: in order to avoid a runtime test.check dependency, generators have been moved.
+    * Call `(lambdaisland.regal.malli.generator/register-regal-generator)` to register a generator at testing time.
+      * Please read docstrings in `lambdaisland.regal.malli` for more information.
 
 ## Changed
 * Small additions and tweaks to documentation

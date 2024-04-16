@@ -273,26 +273,24 @@ mapping namespaced keywords to Regal expressions.
 
 ### Use with Malli
 
-The `lambdaisland.regal.malli` namespace is no longer compatible with the latest
-Malli, so we don't offer a custom Regal Malli schema, but you can use Malli's
-regex schema instead (`:re`), passing it the results from Regal.
+The `::rm/regal` schema provides a wrapper for regal checks.
 
 ```clojure
 (require '[malli.core :as m]
          '[malli.error :as me]
          '[malli.generator :as mg]
-         '[lambdaisland.regal :as regal]
-         '[lambdaisland.regal.generator :as regal-gen])
+         '[lambdaisland.regal.malli :as rm]
+         '[lambdaisland.regal.malli.generator :as rmg])
 
-(def form [:+ "y"])
+(def malli-opts {:registry {::rm/regal rm/rm-regal-schema}})
 
-(def schema [:re (regal/regex form)])
+(def schema (m/schema [::rm/regal [:+ "y"]] malli-opts))
 
 (m/form schema)
-;; => [:re #"y+"]
+;; => [::rm/regal [:+ "y"]]
 
 (m/type schema)
-;; => :re
+;; => ::rm/regal
 
 (m/validate schema "yyy")
 ;; => true
@@ -300,12 +298,9 @@ regex schema instead (`:re`), passing it the results from Regal.
 (me/humanize (m/explain schema "xxx"))
 ;; => ["should match regex"]
 
-(me/humanize (m/explain schema "xxx") {:errors {:re {:error/message {:en "Pattern does not match"}}}})
-;; => ["Pattern does not match"]
-
-(mg/sample [:re {:gen/gen (regal-gen/gen form)} (regal/regex form)])
+(rmg/register-regal-generator) ;; register generator for ::rm/regal schema
+(mg/sample schema)
 ;; => ("y" "y" "y" "y" "yy" "yy" "yyyyy" "yyyyy" "yyyyy" "yyyy")
-
 ```
 
 ### BYO test.check / spec-alpha
