@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>lambdaisland</groupId>
   <artifactId>regal</artifactId>
-  <version>0.0.143</version>
+  <version>0.1.175</version>
   <name>regal</name>
   <description>A Regex Swiss Army Knife</description>
   <url>https://github.com/lambdaisland/regal</url>
@@ -12,6 +12,9 @@
     <name>Lambda Island</name>
     <url>https://lambdaisland.com</url>
   </organization>
+  <properties>
+    <project class="build sourceEncoding">UTF-8</project>
+  </properties>
   <licenses>
     <license>
       <name>MPL-2.0</name>
@@ -22,37 +25,37 @@
     <url>https://github.com/lambdaisland/regal</url>
     <connection>scm:git:git://github.com/lambdaisland/regal.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/lambdaisland/regal.git</developerConnection>
-    <tag>c99d0b1d66bea9f9b4b772a095c9181deda89580</tag>
+    <tag>c944f0b8a1ca8ef5b2cf6b0420777386f04b7e1d</tag>
   </scm>
   <dependencies>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>spec.alpha</artifactId>
-      <version>0.2.187</version>
+      <version>0.4.233</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>expound</groupId>
       <artifactId>expound</artifactId>
-      <version>0.8.5</version>
+      <version>0.9.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>metosin</groupId>
       <artifactId>malli</artifactId>
-      <version>0.5.1</version>
+      <version>0.15.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>test.check</artifactId>
-      <version>1.1.0</version>
+      <version>1.1.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>instaparse</groupId>
       <artifactId>instaparse</artifactId>
-      <version>1.4.10</version>
+      <version>1.4.14</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -71,6 +74,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.1</version>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -79,7 +86,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <git-revision>c99d0b1d66bea9f9b4b772a095c9181deda89580</git-revision>
+              <git-revision>c944f0b8a1ca8ef5b2cf6b0420777386f04b7e1d</git-revision>
             </manifestEntries>
           </archive>
         </configuration>
