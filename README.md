@@ -111,10 +111,10 @@ expressions, Regal **forms**, **patterns**(i.e. strings), and **regex** objects.
 Here is an overview of how to get from one to the other.
 
 | ↓From / To→ | Form                                   | Pattern                          | Regex                      |
-|---------------|----------------------------------------|----------------------------------|----------------------------|
-| Form          | identity                               | lambdaisland.regal/pattern       | lambdaisland.regal/regex   |
-| Pattern       | lambdaisland.regal.parse/parse-pattern | identity                         | lambdaisland.regal/compile |
-| Regex         | lambdaisland.regal.parse/parse         | lambdaisland.regal/regex-pattern | identity                   |
+|-------------|----------------------------------------|----------------------------------|----------------------------|
+| Form        | identity                               | lambdaisland.regal/pattern       | lambdaisland.regal/regex   |
+| Pattern     | lambdaisland.regal.parse/parse-pattern | identity                         | lambdaisland.regal/compile |
+| Regex       | lambdaisland.regal.parse/parse         | lambdaisland.regal/regex-pattern | identity                   |
 
 ### Regal forms
 
@@ -244,7 +244,37 @@ To use the regex engine provided by the runtime (e.g. through `re-find` or
 You can add your own extensions (custom tokens) by providing a `:registry` option
 mapping namespaced keywords to Regal expressions.
 
-### Use with spec.alpha
+
+### Unsupported Syntax
+Unfortunately some syntax is not currently supported by Regal. The following list applies only to java8 and java9.
+#### Set Theoretic
+- The union operation throws an exception. (`[a-d[m-p]]`)
+- Intersections are not implemented (`[a-z&&[def]]`)
+- Differences are not implemented (`[a-z&&[^bc]]`)
+#### Character Classes
+- Horizontal whitespace is not supported (`\h`)
+- Non-horizontal whitespace is not supported (`\H`)
+- Vertical whitespace is not supported (`\V`)
+- UNICODE block classes are not supported 
+- No POSIX character class is implemented 
+- None of thes Java.lang.Character classes are supported for either of the Java versions.
+#### Boundary Matchers
+The following are not supported:
+  - Word boundary (`\b`)
+  - Non-word boundary (`\B`)
+  - End of previous match (`\G`)
+  - End of input except for final terminator (`\Z`)
+  - Match at least `n` times syntax (eg. `#"X{5,}"`)
+#### MIsc
+- Back references are not supported in java8 or java9 at this time.
+- Named capturing groups are not supported
+- Non-capturing groups are not supported
+- Match flag alterations without capturing are not supported
+- Lookahead/lookbehind is supported, but not for generators
+- Non capturing groups are not supported.
+### 
+
+Use with spec.alpha
 
 ``` clojure
 (require '[lambdaisland.regal.spec-alpha :as regal-spec]

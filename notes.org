@@ -1,2 +1,238 @@
 * Links
   - [[https://tc39.es/ecma262/#sec-regexp-regular-expression-objects][ECMA Regexp spec]]
+  - [[https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html][Java8 Regexp page]]
+  - [[https://docs.oracle.com/javase/9/docs/api/java/util/regex/Pattern.html][Java9 Regexp Page]]
+
+
+* Implementation Checks
+This bit of code checks for the correct implementation of various features. Run it to generate a report of features that work (and don't).
+#+BEGIN_SRC clojure
+(ns test-impl
+  (:require [clojure.string :as str]
+            [lambdaisland.regal :as re]
+            [lambdaisland.regal.parse :as re-parse]
+            [lambdaisland.regal.generator :as re-gen]))
+
+(defn implemented?
+  "Check if a piece of syntax is implemented.
+
+  Unimplemented syntax is counted as that which throws errors or does
+  not produce consistent output. Implementation is checked
+  experimentally by generating output and then testing it.
+
+  Currently I just let the error be thrown and capture them on the
+  function that produces the output."
+  [re &{:keys [flavor match-strings nomatch-strings]
+        :or   {flavor          :java9
+               match-strings   nil
+               nomatch-strings nil}}]
+  (re/with-flavor flavor
+    (let [parsed-re     (re-parse/parse re)
+          round-trip-re (re/regex parsed-re)]
+      ;; If there are no matches it returns the offending match, else
+      ;; it returns false. This means that it will return nil if it
+      ;; passes, the offending string if it does not.
+      (and (nil? (some #(if (or (not (re-matches round-trip-re %))
+                                (not (re-matches re %)))
+                          % false)
+                       (concat match-strings (re-gen/sample parsed-re 1000))))
+           (nil? (some #(if (or (re-matches round-trip-re %)
+                                (re-matches re %))
+                          % false)
+                       nomatch-strings))))))
+
+(defn check-impl
+  [type re  &{:keys [flavors match-strings nomatch-strings]
+              :or   {flavors         [:java8 :java9 :ecma]
+                     match-strings   nil
+                     nomatch-strings nil}}]
+  (->> flavors
+       (map (fn [flavor]
+              (let [flavor-name (apply str (rest (str flavor)))]
+                (try (when (not (implemented? re :flavor flavor :match-strings match-strings :nomatch-strings nomatch-strings))
+                       (format "- %s (eg. `%s`) is not implemented in %s, though doesn't note that." type re flavor-name))
+                     (catch java.lang.UnsupportedOperationException e
+                       (format "- %s (eg. `%s`) is not implemented in %s." type re flavor-name))
+                     (catch Exception e
+                       (format "- %s (eg. `%s`) throws an exception, \"%s\" in %s." type re (ex-message e) flavor-name))))))
+       (filter some?)
+       (str/join "\n")))
+#+END_SRC
+
+#+RESULTS:
+| #'test-impl/implemented? |
+| #'test-impl/check-impl   |
+
+The following code is less to write a dedicated file and more to give you an output in a small file that you can then use to create the list. Otherwise the output is kind of bulky / overly detailed.
+
+It also will occasionally be simply wrong about things as there m.
+
+#+BEGIN_SRC clojure :ns test-impl :file unimplemented.md
+(ns test-impl)
+;;; these are sort of misc things that may or may not be implemented
+(let [test-category (fn [category cases]
+                      (str "#### " category "\n"
+                           (->> cases (map (partial apply check-impl)) (filter seq) (str/join "\n"))))]
+  (->> [(test-category
+         "characters"
+         [["Chars" #"x"]
+          ["Backslash character" #"\\"]
+          ["Octal character" #"\05"]
+          ["Hex character" #"\x3B"
+           :flavors [:java8 :java9]]
+          ["Hex character" #"\u037E"
+           :flavors [:java8 :java9]]
+          ["Hex character" #"\x{37E}"
+           :flavors [:java8 :java9]]
+          ["Unicode named character" #"\N{SEMICOLON}"
+           :flavors [:java9]]
+          ["Tab" #"\t"]
+          ["Newline" #"\n"]
+          ["Carriage return" #"\r"]
+          ["Form feed" #"\f"]
+          ["Bell character" #"\a"]
+          ["Escape character" #"\e"]])
+                                        ; ["Control character of n" #"\c3"]
+        (test-category
+         "character classes"
+         [["Simple class" #"[abc]"
+           :match-strings ["a" "b" "c"]
+           :nomatch-strings ["F" "g"]]
+          ["Negation" #"[^abc]"
+           :nomatch-strings ["a" "b" "c"]]
+          ["Range" #"[a-zA-Z]"]
+          ["Union" "#[a-d[m-p]]"
+           :flavors [:java8 :java9]
+           :match-strings ["a" "m" "l"]
+           :nomatch-strings ["e" "g"]]
+          ["Intersection" #"[a-z&&[def]]"
+           :flavors [:java8 :java9]
+           :match-strings ["d" "e" "f"]
+           :nomatch-strings ["z" "a" "&"]]
+          ["Difference" #"[a-z&&[^bc]]"
+           :flavors [:java8 :java9]
+           :nomatch-strings ["c" "b" "&"]]])
+
+        (test-category
+         "predefined character classes"
+         [["Any character" #"."]
+          ["Digit" #"\d"]
+          ["Non-digit" #"\D"]
+          ["Horizontal whitespace character" #"\h"
+           :flavors [:java8 :java9]]
+          ["Non-horizontal whitespace character" #"\H"]
+          ["Whitespace character" #"\v"
+           :flavors [:java8 :java9]]
+          ["Vertical whitespace character" #"\V"
+           :flavors [:java8 :java9]]
+          ["Word character" #"\w"]
+          ["Non-word character" #"\W"]])
+
+        (test-category
+         "POSIX character classes"
+         [["Lower case alphabetic character" #"\p{Lower}"
+           :flavors [:java8 :java9]]
+          ["Upper case alphabetic character" #"\p{Upper}"]
+          ["Any ASCII character" #"\p{ASCII}"]
+          ["any alphabetic character" #"\p{Alpha}"]
+          ["A decimal digit" #"\p{Digit}"]
+          ["An alphanumeric character" #"\p{Alnum}"]
+          ["Punctuation" #"\p{Punct}"]
+          ["A grapheme" #"\p{Graph}"]
+          ["A printable character" #"\p{Print}"]
+          ["A space or tab" #"\p{Blank}"]
+          ["A hexidecimal digit" #"\p{XDigit}"]
+          ["A whitespace character"#"\p{Space}"]])
+        
+        (test-category
+         "java.lang.Character classes"
+         (map #(concat % [:flavors [:java8 :java9]])
+              [["lower case character" #"\p{javaLowerCase}"]
+               ["upper case character" #"\p{javaUpperCase}"]
+               ["whitespace character" #"\p{javaWhitespace}"]
+               ["mirrored character"   #"\p{javaMirrored}"]]))
+
+        (test-category
+         "Unicode block classes"
+         [["Latin script character" #"\p{IsLatin}"]
+          ["Greek block character" #"\p{InGreek}"]
+          ["Uppercase letter" #"\p{Lu}"]
+          ["Alphabetic character" #"\p{IsAlphabetic}"]
+          ["Currency symbol" #"\p{Sc}"]
+          ["Any character except one in Greek block" #"\P{InGreek}"]
+          ["Any letter except an uppercase letter" #"[\p{L}&&[^\p{Lu}]]"]])
+
+        (test-category
+         "Boundry matchers"
+         [["Beginning of line" #"^"]
+          ["End of line" #"$"]
+          ["Word boundary" #"\b"]
+          ["Non-word boundry" #"\B"]
+          ["Unicode grapheme cluster boundary" #"\b{2}"]
+          ["Beginning of input" #"\A"]
+          ["End of previous match" #"\G"]
+          ["End of input except for final terminator" #"\Z"]
+          ["End of input" #"\z"]
+          ["Linebreak sequence" #"\R"]])
+
+        (test-category
+         "Greedy Qunatifiers"
+         [["Once or none" #"X?" :match-strings ["X" ""]]
+          ["Zero or more times" #"X*" :match-strings ["XXXX" "X" ""]]
+          ["One or more times" #"X+" :match-strings ["XXX" "X"]]
+          ["Exactly `n` times" #"X{5}" :match-strings ["XXXXX"]]
+          ["At least `n` times" #"X{5,}" :match-strings ["XXXXX" "XXXXXX" "XXXXXXXXXX"]]
+          ["At least `n` but not more than `m`" #"X{1,2}" :match-strings ["XX" "X"]]])
+        
+        (test-category
+         "Reluctant Qunatifiers"
+         [["Once or none" #"X??" :match-strings ["X" ""]]
+          ["Zero or more times" #"X*?" :match-strings ["XXXX" "X" ""]]
+          ["One or more times" #"X+?" :match-strings ["XXX" "X"]]
+          ["Exactly `n` times" #"X{5}?" :match-strings ["XXXXX"]]
+          ["At least `n` times" #"X{5,}?" :match-strings ["XXXXX" "XXXXXX" "XXXXXXXXXX"]]
+          ["At least `n` but not more than `m`" #"X{1,2}?" :match-strings ["XX" "X"]]])
+
+        (test-category
+         "Possessive Qunatifiers"
+         [["Once or none" #"X?+" :match-strings ["X" ""]]
+          ["Zero or more times" #"X*+" :match-strings ["XXXX" "X" ""]]
+          ["One or more times" #"X++" :match-strings ["XXX" "X"]]
+          ["Exactly `n` times" #"X{5}+" :match-strings ["XXXXX"]]
+          ["At least `n` times" #"X{5,}+" :match-strings ["XXXXX" "XXXXXX" "XXXXXXXXXX"]]
+          ["At least `n` but not more than `m`" #"X{1,2}+" :match-strings ["XX" "X"]]])
+        
+        
+        (test-category
+         "Logical operators"
+         [["Following" #"XY"]
+          ["Either" #"X|Y"]
+          ["Capturing" #"(X)"]])
+
+        (test-category
+         "Back references"
+         [["nth capturing group match" #"(X)(Y)\1"]
+          ["Named capturing group match" #"(?<foo>X)\k<foo>"]])
+        
+        (test-category
+         "Quotation"
+         [["Quote chars" #"\QHELLO WORLD\E"]])
+        
+        (test-category
+         "Special constructs"
+         [["Named capturing group"  #"(?<foo>X)\k<foo>"]
+          ["Non-capturing group" "(?:X)"]
+          ["Deactivate match flags" #"(?-idmsuxU)X"]
+          ["Non capturing group with flags" #"(?idmsux:X)"]
+          ["Zero width positive lookahead" #"(?=X)"]
+          ["Zero width negative look head" #"(?!X)"]
+          ["Zero width positive lookbehind" #"(?<=X)"]
+          ["Zero width negative lookbehind" #"(?<!X)"]
+          ["Non capturing group" #"(?>X)"]])]
+       (str/join "\n\n")
+       (#(spit "unimplemented.md" %))))
+#+END_SRC
+
+#+RESULTS:
+: class clojure.lang.ArityException
+
