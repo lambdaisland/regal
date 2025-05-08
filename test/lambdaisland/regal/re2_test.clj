@@ -28,7 +28,7 @@
     (catch Exception _
       false)))
 
-(defspec re2-matches-like-java 10
+(defspec re2-matches-like-java 100
   (with-redefs [regal-spec/token-gen #(s/gen (disj regal-spec/known-tokens :line-break :start :end))]
     (prop'/for-all [regal (s/gen ::regal/form)
                     :when (can-generate? regal)
@@ -37,6 +37,8 @@
                     :let [java-result
                           (try (re-find (regal/regex regal) s)
                                (catch Exception _
+                                 :fai)
+                               (catch StackOverflowError _
                                  :fail))]
                     :when (not= :fail java-result)]
                    (is (= java-result
